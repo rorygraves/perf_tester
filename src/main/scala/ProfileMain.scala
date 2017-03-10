@@ -1,3 +1,6 @@
+import java.io.File
+import java.util
+
 import ammonite.ops.{%%, Path}
 
 /**
@@ -6,27 +9,27 @@ import ammonite.ops.{%%, Path}
 object ProfileMain {
 
   def main(args: Array[String]): Unit = {
-    if(args.length != 3) {
+
+    println("ARGS = " + args.toList)
+    if (args.length != 3) {
       println("Usage: ProfileMain <checkoutDir> <testDir> <outputDir>")
       System.exit(1)
     }
-    mainEx("aaa", Path(args(0)), Path(args(1)), Path(args(2)))
+    mainEx("aaa", Path(new File(args(0)).getAbsolutePath), Path(new File(args(1)).getAbsolutePath), Path(new File(args(2)).getAbsolutePath))
   }
 
   def mainEx(hash: String, checkoutDir: Path, testDir: Path, outputDir: Path): Unit = {
 
-      //val commits = getRevisions(hash, checkoutDir)
+    //val commits = getRevisions(hash, checkoutDir)
 
     val commitsWithId = List(
       // ("01_baseline", "b09b7feca8c18bfb49c24cc88e94a99703474678"), // baseline
       // ("02_applied", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // opts
 
 
-
-      ("00_baseone", "147e5dd1b88a690b851e57a1783f099cb0dad091", ,List()), // baselin
-      ("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", ,List("-YgenBCodeParallel:false")), // baselin
-      ("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", ,List("-YgenBCodeParallel:false")), // baselin
-      ("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3",List("-YgenBCodeParallel:true"))
+//      ("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091", List()), // baselin
+      ("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")), // baselin
+      ("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
 
       //    ("00_bonus", "c38bb2a9168b0a02ef99a15851459c2591667b4c"), // New
       //    ("01_17Feb", "147e5dd1b88a690b851e57a1783f099cb0dad091"), // 17th feb
@@ -38,7 +41,7 @@ object ProfileMain {
     )
 
     commitsWithId foreach { case (id, commit, extraArgs) =>
-      executeRuns(id,commit, 10, checkoutDir,testDir, outputDir, extraArgs)
+      executeRuns(id, commit, 10, checkoutDir, testDir, outputDir, extraArgs)
 
     }
 
@@ -47,21 +50,21 @@ object ProfileMain {
 
   }
 
-  def executeRuns(id: String, hash: String,repeat: Int, checkoutDir: Path, testDir: Path, outputDir: Path,extraArgs: List[String]): Unit = {
+  def executeRuns(id: String, hash: String, repeat: Int, checkoutDir: Path, testDir: Path, outputDir: Path, extraArgs: List[String]): Unit = {
     println("\n\n******************************************************************************************************")
     println(s"EXECUTING RUN $id - $hash")
     println("******************************************************************************************************\n\n")
     rebuildScalaC(hash, checkoutDir)
     (1 to repeat) foreach { i =>
-      println(" run " + i )
+      println(" run " + i)
       executeTest(id, hash, "" + i, checkoutDir, testDir, outputDir, extraArgs)
     }
   }
 
   def rebuildScalaC(hash: String, checkoutDir: Path): Unit = {
-    %%("git","reset","--hard",hash)(checkoutDir)
-    %%("git","cherry-pick","a7b49706d112a0d7740755938863db395cfb8466")(checkoutDir)
-    %%("sbt","set scalacOptions in Compile in ThisBuild += \"optimise\"","dist/mkPack")(checkoutDir)
+    %%("git", "reset", "--hard", hash)(checkoutDir)
+    %%("git", "cherry-pick", "a7b49706d112a0d7740755938863db395cfb8466")(checkoutDir)
+    %%("sbt", "set scalacOptions in Compile in ThisBuild += \"optimise\"", "dist/mkPack")(checkoutDir)
   }
 
   def executeTest(id: String, hash: String, run: String, checkoutDir: Path, testDir: Path, outputDir: Path, extraArgs: List[String]): Unit = {
@@ -69,16 +72,16 @@ object ProfileMain {
     var profileOutputFile = outputDir / s"run_${id}_${run}.csv"
     println("Logging stats to " + profileOutputFile)
     //  %("sbt",s"++2.12.1=$mkPackPath","set scalacOptions in Compile in ThisBuild +=\"-Yprofile-enabled\"","clean","akka-actor/compile")(testDir)
-    %%("sbt",s"++2.12.1=$mkPackPath", "clean")(testDir)
-    val argsStr = if(extraArgs.nonEmpty) extraArgs.mkString("\"", "\",\"", "\",") else ""
+    %%("sbt", s"++2.12.1=$mkPackPath", "clean")(testDir)
+    val argsStr = if (extraArgs.nonEmpty) extraArgs.mkString("\"", "\",\"", "\",") else ""
     //  %%("sbt",s"++2.12.1=$mkPackPath",s"""set scalacOptions in Compile in ThisBuild ++=List("-Yprofile-destination","$profileOutputFile")""","clean","akka-actor/compile")(testDir)
-    %%("sbt",s"++2.12.1=$mkPackPath",s"""set scalacOptions in Compile in ThisBuild ++=List($argsStr"-Yprofile-destination","$profileOutputFile")""","clean","akka-actor/compile")(testDir)
+    %%("sbt", s"++2.12.1=$mkPackPath", "clean", "akka-actor/compile", "clean", "akka-actor/compile", s"""set scalacOptions in Compile in ThisBuild ++=List($argsStr"-Yprofile-destination","$profileOutputFile")""", "clean", "akka-actor/compile")(testDir)
 
 
   }
 
   def getRevisions(base: String, checkoutDir: Path): List[String] = {
-    val res = %%("git", "rev-list", "--no-merges",s"$base..HEAD")(checkoutDir)
+    val res = %%("git", "rev-list", "--no-merges", s"$base..HEAD")(checkoutDir)
     val commits = res.out.lines.toList.reverse
     commits
   }
