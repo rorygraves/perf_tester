@@ -73,7 +73,7 @@ object ProfileMain {
     )
 
     val results = commitsWithId map { testConfig =>
-      val results = executeRuns(envConfig, testConfig, 10)
+      val results = executeRuns(envConfig, testConfig, 20)
       (testConfig, results)
     }
 
@@ -120,7 +120,11 @@ object ProfileMain {
     val displayString = args.mkString("\"", """","""", "\"")
     println(s"Command line = ${displayString}")
 
-    //%%(args : _*)(envConfig.testDir)
+    %%("sbt", s"++2.12.1=$mkPackPath",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
+      "clean", "akka-actor/compile")(envConfig.testDir)
 
     readResults(testConfig, iteration, profileOutputFile)
   }
