@@ -1,5 +1,6 @@
 import java.io.File
 
+import ProfileMain.TestConfig
 import ammonite.ops.{%%, Path, read}
 
 /**
@@ -29,16 +30,19 @@ object ProfileMain {
     val allWallClockTimeAvg =results.map(_.data.allWallClockMS).sum / count
     val jvmWallClockTimeAvg =results.map(_.data.phaseWallClockMS(25)).sum / count
 
+    val jvmCpuTimeAvg =results.map(_.data.phaseCPUMS(25)).sum / count
+
     val allAllocatedBytes =results.map(_.data.allAllocated).sum / count
     val jvmAllocatedBytes =results.map(_.data.phaseAllocatedBytes(25)).sum / count
 
     val allWallMsStr = f"$allWallClockTimeAvg%6.2f"
     val jvmWallMsSTr = f"$jvmWallClockTimeAvg%6.2f"
+    val jvmCpuMsSTr = f"$jvmCpuTimeAvg%6.2f"
 
     val allAllocatedBytesStr = f"$allAllocatedBytes%6d"
     val jvmAllocatedBytesStr = f"$jvmAllocatedBytes%6d"
 
-    println(f"${testConfig.id}%25s\t$allWallMsStr\t$jvmWallMsSTr\t\t$allAllocatedBytes\t\t$jvmAllocatedBytes")
+    println(f"${testConfig.id}%25s\t$allWallMsStr\t$jvmWallMsSTr\t\t$jvmCpuMsSTr\t\t$allAllocatedBytes\t\t$jvmAllocatedBytes")
 
   }
 
@@ -51,9 +55,13 @@ object ProfileMain {
       // ("02_applied", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // opts
 
 
-      TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
-      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
-      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
+//      TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
+//      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
+//      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true")),
+      TestConfig("03_genBcodeDisabledNoWrite", "0752ea4be3c0d76d939e35e742c683a80ba4c7dc", List("-YgenBcodeParallel:false")),
+      TestConfig("04_genBCodeEnabledNoWrite", "0752ea4be3c0d76d939e35e742c683a80ba4c7dc", List("-YgenBcodeParallel:true"))
+
+
 
       //    ("00_bonus", "c38bb2a9168b0a02ef99a15851459c2591667b4c"), // New
       //    ("01_17Feb", "147e5dd1b88a690b851e57a1783f099cb0dad091"), // 17th feb
@@ -69,7 +77,7 @@ object ProfileMain {
       (testConfig, results)
     }
 
-    println(f"\n\n${"RunName"}%25s\tAllWallMS\tJVMWallMS\tAllocatedAll\tAllocatedJVM")
+    println(f"\n\n${"RunName"}%25s\tAllWallMS\tJVMWallMS\tJVMUserMS\tJVMcpuMs\tAllocatedAll\tAllocatedJVM")
 
     results.foreach {  case (config, results) =>
       printAggResults(config, results)
@@ -102,8 +110,6 @@ object ProfileMain {
 
 
     println("Logging stats to " + profileOutputFile)
-    //  %("sbt",s"++2.12.1=$mkPackPath","set scalacOptions in Compile in ThisBuild +=\"-Yprofile-enabled\"","clean","akka-actor/compile")(testDir)
-    %%("sbt", s"++2.12.1=$mkPackPath", "clean")(envConfig.testDir)
     val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
     val args = List("sbt", s"++2.12.1=$mkPackPath",
       "clean", "akka-actor/compile",
@@ -114,7 +120,7 @@ object ProfileMain {
     val displayString = args.mkString("\"", """","""", "\"")
     println(s"Command line = ${displayString}")
 
-    %%(args : _*)(envConfig.testDir)
+    //%%(args : _*)(envConfig.testDir)
 
     readResults(testConfig, iteration, profileOutputFile)
   }
@@ -126,6 +132,8 @@ object ProfileMain {
     def phaseAllocatedBytes(phaseId: Int) = byPhaseId(phaseId).allocatedBytes
 
     def phaseWallClockMS(phaseId: Int) = byPhaseId(phaseId).wallClockTimeMS
+
+    def phaseCPUMS(phaseId: Int) = byPhaseId(phaseId).cpuTimeMS
 
     val byPhaseId = phases.map( p => (p.phaseId, p)).toMap
     def allWallClockMS = phases.map(_.wallClockTimeMS).sum
