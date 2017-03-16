@@ -1,4 +1,6 @@
 import java.io.File
+import java.lang.ProcessBuilder.Redirect
+import java.lang.ProcessBuilder.Redirect.Type
 
 import ProfileMain.TestConfig
 import ammonite.ops.{%%, Path, read}
@@ -55,11 +57,11 @@ object ProfileMain {
       // ("02_applied", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // opts
 
 
-//      TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
-//      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
-//      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true")),
-      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
-      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
+      TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
+      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
+      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
+//      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
+//      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
 
 
 
@@ -98,32 +100,93 @@ object ProfileMain {
 
   def rebuildScalaC(hash: String, checkoutDir: Path): Unit = {
     %%("git", "reset", "--hard", hash)(checkoutDir)
+//    %%("git", "cherry-pick", "69bfa259f0f5876b7361853e9a517d9901ae45fb")(checkoutDir)
+//    %%("git", "cherry-pick", "dbc61410934d19482e5fe7b7e8f8810d64f85782")(checkoutDir)
     %%("git", "cherry-pick", "a7b49706d112a0d7740755938863db395cfb8466")(checkoutDir)
-    %%("sbt", "set scalacOptions in Compile in ThisBuild += \"optimise\"", "dist/mkPack")(checkoutDir)
+    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"),checkoutDir )
+//    %%("sbt.bat", """set scalacOptions in Compile in ThisBuild += ""optimise"" """, "dist/mkPack")(checkoutDir)
   }
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, iteration: Int): RunResult = {
     val mkPackPath = envConfig.checkoutDir / "build" / "pack"
-    var profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}_$iteration.csv"
+    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}_$iteration.csv"
+    println("Logging stats to " + profileOutputFile)
+    val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
+
+    val args = List(s"++2.12.1=$mkPackPath", //"-debug",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
+      "clean", "akka-actor/compile")
+    runSbt(args, envConfig.testDir)
+    readResults(testConfig, iteration, profileOutputFile)
+  }
+  val sbtCommandLine = {
+    val sbt = new File("lib/sbt-launch.jar").getAbsoluteFile
+    require(sbt.exists())
+    List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G", "-cp", sbt.toString, "xsbt.boot.Boot")
+  }
+  def runSbt(command:List[String], dir: Path) : Unit = {
+    val escaped = command map {
+      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
+    }
+    import collection.JavaConverters._
+    val fullCommand = (sbtCommandLine ::: escaped)
+    println(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
+    val proc = new ProcessBuilder(fullCommand.asJava)
+    proc.directory(dir.toIO)
+    proc.inheritIO()
+    proc.start().waitFor() match {
+      case 0 =>
+      case r => throw new IllegalStateException(s"bad result $r")
+    }
+  }
+
+  def executeTestOld(envConfig: EnvironmentConfig, testConfig: TestConfig, iteration: Int): RunResult = {
+    val mkPackPath = envConfig.checkoutDir / "build" / "pack"
+    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}_$iteration.csv"
+    val profileOutputFileEsc = profileOutputFile.toString().replace("\\", "/")
+
 
 //    var profileOutputFile = Path("/workspace/perf_tester/src/test/resources/data/")/ s"run_${testConfig.id}_$iteration.csv"
 
 
     println("Logging stats to " + profileOutputFile)
-    val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
-    val args = List("sbt", s"++2.12.1=$mkPackPath",
+    println("Escaped" + profileOutputFileEsc)
+    val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"\"", "\"\",\"\"", "\"\",") else ""
+    val args = List("sbt.bat", s"++2.12.1=$mkPackPath",
       "clean", "akka-actor/compile",
       "clean", "akka-actor/compile",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
-      "clean", "akka-actor/compile")
+      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr""-Yprofile-destination"",""$profileOutputFileEsc"") """,
+      "clean", "akka-actor/compile"
+    )
 
     val displayString = args.mkString("\"", """","""", "\"")
     println(s"Command line = ${displayString}")
 
-    %%("sbt", s"++2.12.1=$mkPackPath",
+    %%("sbt.bat", s"""++2.12.1=s:/scala/test/scalac/build/pack""", //$mkPackPath",
       "clean", "akka-actor/compile",
       "clean", "akka-actor/compile",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
+      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr""-Yprofile-destination"",""$profileOutputFileEsc"")""",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
+      "clean", "akka-actor/compile",
       "clean", "akka-actor/compile")(envConfig.testDir)
 
     readResults(testConfig, iteration, profileOutputFile)
