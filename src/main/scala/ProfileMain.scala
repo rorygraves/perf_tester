@@ -100,11 +100,8 @@ object ProfileMain {
 
   def rebuildScalaC(hash: String, checkoutDir: Path): Unit = {
     %%("git", "reset", "--hard", hash)(checkoutDir)
-//    %%("git", "cherry-pick", "69bfa259f0f5876b7361853e9a517d9901ae45fb")(checkoutDir)
-//    %%("git", "cherry-pick", "dbc61410934d19482e5fe7b7e8f8810d64f85782")(checkoutDir)
-    %%("git", "cherry-pick", "a7b49706d112a0d7740755938863db395cfb8466")(checkoutDir)
+    %%("git", "cherry-pick", "534d37e8f73fd42ba88b4e49f75af76c7533ae66")(checkoutDir)
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"),checkoutDir )
-//    %%("sbt.bat", """set scalacOptions in Compile in ThisBuild += ""optimise"" """, "dist/mkPack")(checkoutDir)
   }
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, iteration: Int): RunResult = {
@@ -127,9 +124,12 @@ object ProfileMain {
     List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G", "-cp", sbt.toString, "xsbt.boot.Boot")
   }
   def runSbt(command:List[String], dir: Path) : Unit = {
-    val escaped = command map {
-      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
-    }
+//    val escaped = command map {
+//      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
+//    }
+
+    val escaped = command
+
     import collection.JavaConverters._
     val fullCommand = (sbtCommandLine ::: escaped)
     println(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
