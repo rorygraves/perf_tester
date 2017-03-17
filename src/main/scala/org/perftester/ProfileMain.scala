@@ -1,21 +1,15 @@
+package org.perftester
+
 import java.io.File
-import java.lang.ProcessBuilder.Redirect
-import java.lang.ProcessBuilder.Redirect.Type
 
-import ProfileMain.TestConfig
-import ammonite.ops.{%%, Path, read}
+import ammonite.ops.{%%, Path}
+import org.perftester.results.{ResultReader, RunResult}
 
-/**
-  * Created by rorygraves on 09/03/2017.
-  */
+
 object ProfileMain {
 
-  case class EnvironmentConfig(checkoutDir: Path, testDir: Path, outputDir: Path)
-
-  case class TestConfig(id: String, commit: String, extraArgs: List[String] = Nil)
-
   def main(args: Array[String]): Unit = {
-//    readResults(Path("/workspace/perf_tester/src/test/resources/data/run_00_baseline_1.csv"))
+//    readResults(TestConfig("001","xxx",Nil),1,Path("/workspace/perf_tester/src/test/resources/data/run_00_baseline_1.csv"))
     if (args.length != 3) {
       println("Usage: ProfileMain <checkoutDir> <testDir> <outputDir>")
       System.exit(1)
@@ -23,7 +17,7 @@ object ProfileMain {
     val checkoutDir = Path(new File(args(0)).getAbsolutePath)
     val testDir = Path(new File(args(1)).getAbsolutePath)
     val outputDir = Path(new File(args(2)).getAbsolutePath)
-    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir)
+    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 10)
     runBenchmark(envConfig)
   }
 
@@ -41,17 +35,11 @@ object ProfileMain {
     val jvmWallMsSTr = f"$jvmWallClockTimeAvg%6.2f"
     val jvmCpuMsSTr = f"$jvmCpuTimeAvg%6.2f"
 
-    val allAllocatedBytesStr = f"$allAllocatedBytes%6d"
-    val jvmAllocatedBytesStr = f"$jvmAllocatedBytes%6d"
-
     println(f"${testConfig.id}%25s\t$allWallMsStr\t$jvmWallMsSTr\t\t$jvmCpuMsSTr\t\t$allAllocatedBytes\t\t$jvmAllocatedBytes")
 
   }
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
-
-    //val commits = getRevisions(hash, checkoutDir)
-
     val commitsWithId = List(
       // ("01_baseline", "b09b7feca8c18bfb49c24cc88e94a99703474678"), // baseline
       // ("02_applied", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // opts
@@ -75,14 +63,14 @@ object ProfileMain {
     )
 
     val results = commitsWithId map { testConfig =>
-      val results = executeRuns(envConfig, testConfig, 20)
+      val results = executeRuns(envConfig, testConfig, envConfig.iterations)
       (testConfig, results)
     }
 
     println(f"\n\n${"RunName"}%25s\tAllWallMS\tJVMWallMS\tJVMUserMS\tJVMcpuMs\tAllocatedAll\tAllocatedJVM")
 
-    results.foreach {  case (config, results) =>
-      printAggResults(config, results)
+    results.foreach {  case (config, configResult) =>
+      printAggResults(config, configResult)
     }
 
   }
@@ -116,13 +104,14 @@ object ProfileMain {
       s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
       "clean", "akka-actor/compile")
     runSbt(args, envConfig.testDir)
-    readResults(testConfig, iteration, profileOutputFile)
+    ResultReader.readResults(testConfig, iteration, profileOutputFile)
   }
-  val sbtCommandLine = {
+  val sbtCommandLine: List[String] = {
     val sbt = new File("lib/sbt-launch.jar").getAbsoluteFile
     require(sbt.exists())
     List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G", "-cp", sbt.toString, "xsbt.boot.Boot")
   }
+
   def runSbt(command:List[String], dir: Path) : Unit = {
 //    val escaped = command map {
 //      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -140,97 +129,6 @@ object ProfileMain {
       case 0 =>
       case r => throw new IllegalStateException(s"bad result $r")
     }
-  }
-
-  def executeTestOld(envConfig: EnvironmentConfig, testConfig: TestConfig, iteration: Int): RunResult = {
-    val mkPackPath = envConfig.checkoutDir / "build" / "pack"
-    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}_$iteration.csv"
-    val profileOutputFileEsc = profileOutputFile.toString().replace("\\", "/")
-
-
-//    var profileOutputFile = Path("/workspace/perf_tester/src/test/resources/data/")/ s"run_${testConfig.id}_$iteration.csv"
-
-
-    println("Logging stats to " + profileOutputFile)
-    println("Escaped" + profileOutputFileEsc)
-    val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"\"", "\"\",\"\"", "\"\",") else ""
-    val args = List("sbt.bat", s"++2.12.1=$mkPackPath",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr""-Yprofile-destination"",""$profileOutputFileEsc"") """,
-      "clean", "akka-actor/compile"
-    )
-
-    val displayString = args.mkString("\"", """","""", "\"")
-    println(s"Command line = ${displayString}")
-
-    %%("sbt.bat", s"""++2.12.1=s:/scala/test/scalac/build/pack""", //$mkPackPath",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr""-Yprofile-destination"",""$profileOutputFileEsc"")""",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile")(envConfig.testDir)
-
-    readResults(testConfig, iteration, profileOutputFile)
-  }
-
-  case class PhaseData(phaseId: Int,
-                       phaseName: String, wallClockTimeMS : Double, cpuTimeMS : Double,
-                       userTimeMS : Double, allocatedBytes: Long)
-  case class PhaseSet(phases: List[PhaseData]) {
-    def phaseAllocatedBytes(phaseId: Int) = byPhaseId(phaseId).allocatedBytes
-
-    def phaseWallClockMS(phaseId: Int) = byPhaseId(phaseId).wallClockTimeMS
-
-    def phaseCPUMS(phaseId: Int) = byPhaseId(phaseId).cpuTimeMS
-
-    val byPhaseId = phases.map( p => (p.phaseId, p)).toMap
-    def allWallClockMS = phases.map(_.wallClockTimeMS).sum
-    def allAllocated = phases.map(_.allocatedBytes).sum
-    def allCPUTime = phases.map(_.cpuTimeMS).sum
-
-  }
-  case class RunResult(testConfig: TestConfig, iteration: Int, data: PhaseSet)
-
-//  phase, phaseName, wallClockTimeNs,wallClockTimeMs, cpuTimeNs, cpuTimeMs, userTimeNs, allocatedBytes, retainedHeapBytes, gcTimeMs
-
-  def readResults(testConfig: TestConfig, iteration: Int, file : Path): RunResult = {
-    val lines = read.lines! file
-    val asValues = lines.map(_.split(',').toList)
-    val dataLines = asValues.filter(_.head == "data")
-    val rows = dataLines.map { row =>
-      PhaseData(
-        // data,
-        row(1).toInt, // phaseId
-        row(2), // phaseName
-        // wallClockTimeNs
-        row(4).toDouble, // wallClockTimeMs,
-        // cpuTimeNs,
-        row(6).toDouble, // cpuTimeMs,
-        row(7).toDouble / 1e6,// userTimeNs,
-        row(8).toLong// allocatedBytes, retainedHeapBytes, gcTimeMs
-
-      )
-    }
-    RunResult(testConfig,iteration,PhaseSet(rows.toList))
   }
 
   def getRevisions(base: String, checkoutDir: Path): List[String] = {
