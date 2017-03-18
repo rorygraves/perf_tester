@@ -1,6 +1,7 @@
 package org.perftester
 
 import java.io.File
+import java.nio.file.Files
 
 import ammonite.ops.{%%, Path}
 import org.perftester.results.{ResultReader, RunResult}
@@ -9,7 +10,7 @@ import org.perftester.results.{ResultReader, RunResult}
 object ProfileMain {
 
   def main(args: Array[String]): Unit = {
-//    readResults(TestConfig("001","xxx",Nil),1,Path("/workspace/perf_tester/src/test/resources/data/run_00_baseline_1.csv"))
+    //    readResults(TestConfig("001","xxx",Nil),1,Path("/workspace/perf_tester/src/test/resources/data/run_00_baseline_1.csv"))
     if (args.length != 3) {
       println("Usage: ProfileMain <checkoutDir> <testDir> <outputDir>")
       System.exit(1)
@@ -17,25 +18,30 @@ object ProfileMain {
     val checkoutDir = Path(new File(args(0)).getAbsolutePath)
     val testDir = Path(new File(args(1)).getAbsolutePath)
     val outputDir = Path(new File(args(2)).getAbsolutePath)
-    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 10)
+    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 60)
     runBenchmark(envConfig)
   }
 
-  def printAggResults(testConfig: TestConfig, results: Seq[RunResult]): Unit = {
-    val count = results.size
-    val allWallClockTimeAvg =results.map(_.data.allWallClockMS).sum / count
-    val jvmWallClockTimeAvg =results.map(_.data.phaseWallClockMS(25)).sum / count
+  val isWindows = System.getProperty("os.name").startsWith("Windows")
 
-    val jvmCpuTimeAvg =results.map(_.data.phaseCPUMS(25)).sum / count
+  def printAggResults(testConfig: TestConfig, results: RunResult): Unit = {
+    val allWallClockTimeAvg = results.allWallClockMS
+    val jvmWallClockTimeAvg = results.phaseWallClockMS("jvm")
 
-    val allAllocatedBytes =results.map(_.data.allAllocated).sum / count
-    val jvmAllocatedBytes =results.map(_.data.phaseAllocatedBytes(25)).sum / count
+    val allCpuTimeAvg = results.allCPUTime
+    val jvmCpuTimeAvg = results.phaseCpuMS("jvm")
 
-    val allWallMsStr = f"$allWallClockTimeAvg%6.2f"
-    val jvmWallMsSTr = f"$jvmWallClockTimeAvg%6.2f"
-    val jvmCpuMsSTr = f"$jvmCpuTimeAvg%6.2f"
+    val allAllocatedBytes = results.allAllocated
+    val jvmAllocatedBytes = results.phaseAllocatedBytes("jvm")
 
-    println(f"${testConfig.id}%25s\t$allWallMsStr\t$jvmWallMsSTr\t\t$jvmCpuMsSTr\t\t$allAllocatedBytes\t\t$jvmAllocatedBytes")
+    val allWallMsStr = allWallClockTimeAvg.formatted(6,2)
+    val jvmWallMsStr = jvmWallClockTimeAvg.formatted(6,2)
+    val allCpuMsStr = allCpuTimeAvg.formatted(6,2)
+    val jvmCpuMsStr = jvmCpuTimeAvg.formatted(6,2)
+    val allAllocatedBytesStr = allAllocatedBytes.formatted(6,2)
+    val jvmAllocatedBytesStr = jvmAllocatedBytes.formatted(6,2)
+
+    println(f"${testConfig.id}%25s\t$allWallMsStr%25s\t$jvmWallMsStr%25s\t$allCpuMsStr%25s\t$jvmCpuMsStr%25s\t$allAllocatedBytesStr%25s\t$jvmAllocatedBytesStr%25s")
 
   }
 
@@ -48,9 +54,8 @@ object ProfileMain {
       TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
       TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
       TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
-//      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
-//      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
-
+      //      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
+      //      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
 
 
       //    ("00_bonus", "c38bb2a9168b0a02ef99a15851459c2591667b4c"), // New
@@ -67,59 +72,81 @@ object ProfileMain {
       (testConfig, results)
     }
 
-    println(f"\n\n${"RunName"}%25s\tAllWallMS\tJVMWallMS\tJVMUserMS\tJVMcpuMs\tAllocatedAll\tAllocatedJVM")
+    def heading(title: String) {
+      println(f"$title\n\n${"RunName"}%25s\t${"AllWallMS"}%25s\t${"JVMWallMS"}%25s\t${"JVMUserMS"}%25s\t${"JVMcpuMs"}%25s\t${"AllocatedAll"}%25s\t${"AllocatedJVM"}%25s")
+    }
 
-    results.foreach {  case (config, configResult) =>
+    heading("ALL")
+    results.foreach { case (config, configResult) =>
       printAggResults(config, configResult)
+    }
+
+    heading("after 10")
+    results.foreach { case (config, configResult) =>
+      printAggResults(config, configResult.filterIteration(10, 10000))
+    }
+
+    heading("after 10 JVM")
+    results.foreach { case (config, configResult) =>
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm"))
+    }
+
+    heading("after 10 JVM, no GC")
+    results.foreach { case (config, configResult) =>
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc)
     }
 
   }
 
-  def executeRuns(envConfig: EnvironmentConfig, testConfig: TestConfig, repeat: Int): Seq[RunResult] = {
+  private var lastBuiltScalac:String = ""
+  def executeRuns(envConfig: EnvironmentConfig, testConfig: TestConfig, repeat: Int): RunResult = {
+    val reused = if (lastBuiltScalac == testConfig.commit) "REUSED" else "building"
     println("\n\n******************************************************************************************************")
-    println(s"EXECUTING RUN ${testConfig.id} - ${testConfig.commit}")
+    println(s"EXECUTING RUN ${testConfig.id} - ${testConfig.commit}      $reused")
     println("******************************************************************************************************\n\n")
-    rebuildScalaC(testConfig.commit, envConfig.checkoutDir)
-    (1 to repeat) map { i =>
-      println(s" run $i")
-      executeTest(envConfig, testConfig, i)
+    if (lastBuiltScalac != testConfig.commit) {
+      rebuildScalaC(testConfig.commit, envConfig.checkoutDir)
+      lastBuiltScalac = testConfig.commit
     }
+    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
+
+    executeTest(envConfig, testConfig, profileOutputFile, repeat)
+    ResultReader.readResults(testConfig, profileOutputFile, repeat)
   }
 
   def rebuildScalaC(hash: String, checkoutDir: Path): Unit = {
     %%("git", "reset", "--hard", hash)(checkoutDir)
-    %%("git", "cherry-pick", "534d37e8f73fd42ba88b4e49f75af76c7533ae66")(checkoutDir)
-    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"),checkoutDir )
+    %%("git", "cherry-pick", "534d37e8f73fd42ba88b4e49f75af76c7533ae66")(checkoutDir) //profiler
+    %%("git", "cherry-pick", "6f9d235d3b547bd9e586f3e30981a95b45788f85")(checkoutDir) //sbt hack
+    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), checkoutDir)
   }
 
-  def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, iteration: Int): RunResult = {
+  def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile:Path, repeats: Int): Unit = {
     val mkPackPath = envConfig.checkoutDir / "build" / "pack"
-    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}_$iteration.csv"
     println("Logging stats to " + profileOutputFile)
+    if (Files.exists(profileOutputFile.toNIO))
+      Files.delete(profileOutputFile.toNIO)
     val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
 
     val args = List(s"++2.12.1=$mkPackPath", //"-debug",
-      "clean", "akka-actor/compile",
-      "clean", "akka-actor/compile",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""",
-      "clean", "akka-actor/compile")
+      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""") ++
+      List.fill(repeats)(List("clean", "akka-actor/compile")).flatten
     runSbt(args, envConfig.testDir)
-    ResultReader.readResults(testConfig, iteration, profileOutputFile)
   }
+
   val sbtCommandLine: List[String] = {
     val sbt = new File("lib/sbt-launch.jar").getAbsoluteFile
     require(sbt.exists())
     List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G", "-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
-  def runSbt(command:List[String], dir: Path) : Unit = {
-//    val escaped = command map {
-//      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
-//    }
-
-    val escaped = command
-
+  def runSbt(command: List[String], dir: Path): Unit = {
     import collection.JavaConverters._
+
+    val escaped = if (isWindows) command map {
+      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
+    } else command
+
     val fullCommand = (sbtCommandLine ::: escaped)
     println(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
     val proc = new ProcessBuilder(fullCommand.asJava)
