@@ -1,6 +1,6 @@
 package org.perftester.results
 
-import java.text.DecimalFormat
+import java.util
 
 import org.perftester.TestConfig
 
@@ -32,19 +32,33 @@ case class RunResult (testConfig: TestConfig, rawData : Seq[PhaseResults], itera
     val max = PhaseResults.combine(grouped, Math.max(_, _))
     val mean = PhaseResults.transform(totals, ( _ / grouped.size))
   }
-  class Distribution(min:Double, mean:Double, max:Double) {
-    val neg = ((mean - min) /mean * 1000).toInt/10.0
-    val pos = ((max - mean) /mean * 1000).toInt/10.0
-    override def toString: String = s"$mean [+$pos% -$neg%"
-    java.lang.Double.toString(mean)
+  class Distribution(results : Array[Double]) {
+    val mean = results.sum/size
+    def size = results.length
+    def median = at(.5)
+    def iqr = at(.75) - at(.25)
+    def at(pos:Double) = {
+      assert (pos >= 0.0)
+      assert (pos <= 1.0)
+      val index= ((size -1) * pos).toInt
+      results(index)
+    }
+    def atPC(pos:Double) = {
+      at(pos) / mean
+    }
+    override def toString: String = s"$mean [+${atPC(1)}% :${atPC(.9)}% -${atPC(0)}%"
+    private def format(s:Int,p:Int, v:Double) :String = {
+      String.format(s"%$s.${p}f", new java.lang.Double(v))
+    }
     def formatted(s:Int,p:Int) = {
-      val d= String.format(s"%$s.${p}f", new java.lang.Double(mean))
-      s"$d [+${pos}% -${neg}%]"
+      (s"${format(s,p,mean)} [+${format(4,2,atPC(1))}% -${format(4,2,atPC(0))}%]")
     }
   }
   object Distribution {
-    def apply (aggregate: Aggregate, fn : (PhaseResults) => Double) = {
-      new Distribution(fn(aggregate.min), fn(aggregate.mean), fn(aggregate.max))
+    def range(lower:Double, upper:Double, aggregate: Aggregate, fn : (PhaseResults) => Double) = {
+      val results : Array[Double] = aggregate.grouped.map(fn)(scala.collection.breakOut)
+      util.Arrays.sort(results)
+      new Distribution(results.slice((results.size *lower).toInt, (results.size *upper).toInt))
     }
   }
 
@@ -58,13 +72,18 @@ case class RunResult (testConfig: TestConfig, rawData : Seq[PhaseResults], itera
     new Aggregate(byIteration.values.toList)
   }
 
+  class Detail (lower:Double, upper:Double) {
 
-  def phaseAllocatedBytes(phase: String)= Distribution(byPhaseName(phase), _.allocatedMB)
-  def phaseWallClockMS(phase: String)= Distribution(byPhaseName(phase), _.wallClockTimeMS)
-  def phaseCpuMS(phase: String)= Distribution(byPhaseName(phase), _.cpuTimeMS)
+    def phaseAllocatedBytes(phase: String) = Distribution.range(lower, upper, byPhaseName(phase), _.allocatedMB)
 
-  lazy val allWallClockMS= Distribution(totals, _.wallClockTimeMS)
-  lazy val allAllocated= Distribution(totals, _.allocatedMB)
-  lazy val allCPUTime= Distribution(totals, _.cpuTimeMS)
+    def phaseWallClockMS(phase: String) = Distribution.range(lower, upper, byPhaseName(phase), _.wallClockTimeMS)
 
+    def phaseCpuMS(phase: String) = Distribution.range(lower, upper, byPhaseName(phase), _.cpuTimeMS)
+
+    lazy val allWallClockMS = Distribution.range(lower, upper, totals, _.wallClockTimeMS)
+    lazy val allAllocated = Distribution.range(lower, upper, totals, _.allocatedMB)
+    lazy val allCPUTime = Distribution.range(lower, upper, totals, _.cpuTimeMS)
+  }
+  val all = new Detail(0,1)
+  val std = new Detail(0,.9)
 }

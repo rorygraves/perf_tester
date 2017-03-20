@@ -24,7 +24,7 @@ object ProfileMain {
 
   val isWindows = System.getProperty("os.name").startsWith("Windows")
 
-  def printAggResults(testConfig: TestConfig, results: RunResult): Unit = {
+  def printAggResults(testConfig: TestConfig, results: RunResult#Detail): Unit = {
     val allWallClockTimeAvg = results.allWallClockMS
     val jvmWallClockTimeAvg = results.phaseWallClockMS("jvm")
 
@@ -78,22 +78,26 @@ object ProfileMain {
 
     heading("ALL")
     results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult)
+      printAggResults(config, configResult.all)
+      printAggResults(config, configResult.std)
     }
 
     heading("after 10")
     results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.filterIteration(10, 10000))
+      printAggResults(config, configResult.filterIteration(10, 10000).all)
+      printAggResults(config, configResult.filterIteration(10, 10000).std)
     }
 
     heading("after 10 JVM")
     results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm"))
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").all)
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").std)
     }
 
     heading("after 10 JVM, no GC")
     results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc)
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.all)
+      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
     }
 
   }
