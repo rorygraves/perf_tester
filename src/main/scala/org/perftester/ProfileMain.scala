@@ -22,7 +22,7 @@ object ProfileMain {
     runBenchmark(envConfig)
   }
 
-  val isWindows = System.getProperty("os.name").startsWith("Windows")
+  val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
   def printAggResults(testConfig: TestConfig, results: RunResult#Detail): Unit = {
     val allWallClockTimeAvg = results.allWallClockMS
@@ -47,24 +47,8 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
     val commitsWithId = List(
-      // ("01_baseline", "b09b7feca8c18bfb49c24cc88e94a99703474678"), // baseline
-      // ("02_applied", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // opts
-
-
-      TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
-      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
-      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
-      //      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
-      //      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
-
-
-      //    ("00_bonus", "c38bb2a9168b0a02ef99a15851459c2591667b4c"), // New
-      //    ("01_17Feb", "147e5dd1b88a690b851e57a1783f099cb0dad091"), // 17th feb
-      //    ("02_30Jan", "6d4782774be5ffff361724e4e22a6ae61d4624fe"), // 30th Jan
-      //    ("03_15Jan", "2268aabbcbc1a4ad6ac3d6cde960dfeb85ffbb5b"), // 15th Jan
-      //    ("04_30Dec", "a75e4a7fafef9ce619a8d0f0622333d20502e7c8"), // 30th Dec
-      //    ("05_30Nov", "0339663cbbd4d22b0758257f2ce078b5a007f316") // 30th Nov
-      //      ("06_settings", "946cd11d45785caed5ad87837f66c7051b34363d") // New
+       TestConfig("01_baseline", "6048c661f7312be9bbfdde1edac963336d956c0e"), // baseline retronym
+       TestConfig("02_optimised", "920bc4e31c5415d98c1a7f26aebc790250aafe4a") // optimised retronym
     )
 
     val results = commitsWithId map { testConfig =>
@@ -121,7 +105,8 @@ object ProfileMain {
   def rebuildScalaC(hash: String, checkoutDir: Path): Unit = {
     %%("git", "reset", "--hard", hash)(checkoutDir)
     %%("git", "cherry-pick", "534d37e8f73fd42ba88b4e49f75af76c7533ae66")(checkoutDir) //profiler
-    %%("git", "cherry-pick", "6f9d235d3b547bd9e586f3e30981a95b45788f85")(checkoutDir) //sbt hack
+    // sbt hack undo
+//    %%("git", "cherry-pick", "6f9d235d3b547bd9e586f3e30981a95b45788f85")(checkoutDir) //sbt hack
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), checkoutDir)
   }
 
