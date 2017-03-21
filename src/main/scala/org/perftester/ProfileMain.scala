@@ -52,8 +52,8 @@ object ProfileMain {
 
 
       TestConfig("00_baseline", "147e5dd1b88a690b851e57a1783f099cb0dad091"),
-      TestConfig("01_genBcodeBaseDisabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:false")),
-      TestConfig("02_genBCodeEnabled", "4b283eb20c7365ddbdee0239cddce1bb96981ec3", List("-YgenBcodeParallel:true"))
+      TestConfig("01_genBcodeBaseDisabled", "7a892a5b40d815c42a9e65ab5be09651359a544f", List("-YgenBcodeParallel:false")),
+      TestConfig("02_genBCodeEnabled", "7a892a5b40d815c42a9e65ab5be09651359a544f", List("-YgenBcodeParallel:true"))
       //      TestConfig("03_genBcodeDisabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:false")),
       //      TestConfig("04_genBCodeEnabledNoWrite", "529e7a52f3c601a0c5523a6174548724a612f0b8", List("-Ynowriting", "-YgenBcodeParallel:true"))
 
