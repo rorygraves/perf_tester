@@ -6,22 +6,28 @@ import org.perftester.TestConfig
 import scala.collection.SortedSet
 
 object ResultReader {
+  private val totalOrSingle = Set(ResultType.SINGLE.toString,ResultType.TOTAL.toString)
   def readResults(testConfig: TestConfig, file : Path, iterations:Int): RunResult = {
     val lines = read.lines! file
     val asValues = lines.map(_.split(',').toList)
-    val dataLines = asValues.filter(_.head == "data")
+    val dataLines = asValues.filter( value =>
+      value(0) == "data" && totalOrSingle(value(4)) )
     val rows = dataLines.map { row =>
       PhaseResults(
         // data,
         row(1).toInt, // iteration id
         row(2).toInt, // phaseId
         row(3), // phaseName
-        row(4).toDouble, // wallClockTimeMs,
-        row(5).toDouble, // cpuTimeMs,
-        row(6).toDouble, // userTimeMS
-        row(7).toDouble, // allocatedMB
-        row(8).toDouble, // retainedMB
-        row(9).toDouble// gcTimeMs
+        ResultType.withName(row(4)), // type
+        row(5).toInt, // id
+        row(6), // comment
+        row(7).toDouble, // wallClockTimeMs,
+        row(8).toDouble, // idleTimeMs,
+        row(9).toDouble, // cpuTimeMs,
+        row(10).toDouble, // userTimeMS
+        row(11).toDouble, // allocatedMB
+        row(12).toDouble, // retainedMB
+        row(13).toDouble// gcTimeMs
 
       )
     }

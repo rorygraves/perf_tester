@@ -2,4 +2,9 @@ package org.perftester
 
 import ammonite.ops.{%%, Path, read}
 
-case class TestConfig(id: String, commit: String, extraArgs: List[String] = Nil)
+sealed trait BuildType
+case class BuildFromGit(sha : String, customPath:Option[Path] = None) extends BuildType
+case class BuildFromDir(path:Path) extends BuildType
+
+
+case class TestConfig(id:String, buildDefn: BuildType, extraArgs: List[String] = Nil)
