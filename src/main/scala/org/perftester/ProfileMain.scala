@@ -53,8 +53,8 @@ object ProfileMain {
       TestConfig("00_baseline", BuildFromGit("cdfba554003cb41ad8b4def46662c7379955eabb")),
       TestConfig("01_genBcodeBaseDisabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:false")),
       TestConfig("02_genBCodeEnabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:true")),
-      TestConfig("03_genBcodeBaseDisabled_BT", BuildFromGit("1c376862a4605c99f39eee89548be51486a8e5a9"), List("-YgenBcodeParallel:false")),
-      TestConfig("04_genBCodeEnabled_BT", BuildFromGit("1c376862a4605c99f39eee89548be51486a8e5a9"), List("-YgenBcodeParallel:true"))
+      TestConfig("03_genBcodeBaseDisabled_BT", BuildFromGit("45bc7a777f50ad667a8831cc91b9c963b1f9abce"), List("-YgenBcodeParallel:false")),
+      TestConfig("04_genBCodeEnabled_BT", BuildFromGit("45bc7a777f50ad667a8831cc91b9c963b1f9abce"), List("-YgenBcodeParallel:true"))
     )
 
     val results = commitsWithId map { testConfig =>
