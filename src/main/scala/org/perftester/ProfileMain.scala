@@ -20,7 +20,7 @@ object ProfileMain {
     val checkoutDir = Path(new File(args(0)).getAbsolutePath)
     val testDir = Path(new File(args(1)).getAbsolutePath)
     val outputDir = Path(new File(args(2)).getAbsolutePath)
-    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 200)
+    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 60)
     runBenchmark(envConfig)
   }
 
@@ -53,8 +53,8 @@ object ProfileMain {
       TestConfig("00_baseline", BuildFromGit("cdfba554003cb41ad8b4def46662c7379955eabb")),
       TestConfig("01_genBcodeBaseDisabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:false")),
       TestConfig("02_genBCodeEnabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:true")),
-      TestConfig("03_genBcodeBaseDisabled_BT", BuildFromGit("0ba6162dce341231cf18f8494f30b54213719ea6"), List("-YgenBcodeParallel:false")),
-      TestConfig("04_genBCodeEnabled_BT", BuildFromGit("0ba6162dce341231cf18f8494f30b54213719ea6"), List("-YgenBcodeParallel:true"))
+      TestConfig("03_genBcodeBaseDisabled_BT", BuildFromGit("1c376862a4605c99f39eee89548be51486a8e5a9"), List("-YgenBcodeParallel:false")),
+      TestConfig("04_genBCodeEnabled_BT", BuildFromGit("1c376862a4605c99f39eee89548be51486a8e5a9"), List("-YgenBcodeParallel:true"))
     )
 
     val results = commitsWithId map { testConfig =>
