@@ -159,7 +159,7 @@ object Option {
   /**
    * <code>Option</code> factory that creates <code>None</code>
    */
-  def none[A] = None.asInstanceOf[Option[A]]
+  def none[A]: Option[A] = None.asInstanceOf[Option[A]]
 
   /**
    * <code>Option</code> factory that creates <code>None</code> if

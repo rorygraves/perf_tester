@@ -26,7 +26,7 @@ private[io] trait WithUdpSend {
 
   def channel: DatagramChannel
   def udp: UdpExt
-  val settings = udp.settings
+  val settings: Udp.UdpSettings = udp.settings
 
   import settings._
 

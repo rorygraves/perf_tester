@@ -48,7 +48,7 @@ private[io] trait ChannelRegistry {
    * Registers the given channel with the selector, creates a ChannelRegistration instance for it
    * and dispatches it back to the channelActor calling this `register`
    */
-  def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef)
+  def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit
 }
 
 /**
@@ -57,8 +57,8 @@ private[io] trait ChannelRegistry {
  * Enables a channel actor to directly schedule interest setting tasks to the selector management dispatcher.
  */
 private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded {
-  def enableInterest(op: Int)
-  def disableInterest(op: Int)
+  def enableInterest(op: Int): Unit
+  def disableInterest(op: Int): Unit
 }
 
 private[io] object SelectionHandler {
@@ -79,9 +79,9 @@ private[io] object SelectionHandler {
 
   private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
 
-    override def supervisorStrategy = connectionSupervisorStrategy
+    override def supervisorStrategy: SupervisorStrategy = connectionSupervisorStrategy
 
-    val selectorPool = context.actorOf(
+    val selectorPool: ActorRef = context.actorOf(
       props = RandomPool(nrOfSelectors).props(Props(classOf[SelectionHandler], selectorSettings)).withDeploy(Deploy.local),
       name = "selectors"
     )
@@ -110,7 +110,7 @@ private[io] object SelectionHandler {
     private[this] val selector = SelectorProvider.provider.openSelector
     private[this] val wakeUp = new AtomicBoolean(false)
 
-    final val OP_READ_AND_WRITE = OP_READ | OP_WRITE // compile-time constant
+    final val OP_READ_AND_WRITE: Int = OP_READ | OP_WRITE // compile-time constant
 
     private[this] val select = new Task {
       def tryRun(): Unit = {
@@ -216,7 +216,7 @@ private[io] object SelectionHandler {
 
     // FIXME: Add possibility to signal failure of task to someone
     private abstract class Task extends Runnable {
-      def tryRun()
+      def tryRun(): Unit
       def run() {
         try tryRun()
         catch {
@@ -254,7 +254,9 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
 
   // we can never recover from failures of a connection or listener child
   // and log the failure at debug level
-  override def supervisorStrategy = {
+  override def supervisorStrategy: OneForOneStrategy {
+    def logFailure(context: ActorContext, child: ActorRef, cause: Throwable, decision: SupervisorStrategy.Directive): Unit
+  } = {
     def stoppingDecider: SupervisorStrategy.Decider = {
       case _: Exception ⇒ SupervisorStrategy.Stop
     }

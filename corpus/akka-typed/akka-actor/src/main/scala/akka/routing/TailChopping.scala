@@ -175,7 +175,7 @@ final case class TailChoppingPool(
     new Router(TailChoppingRoutingLogic(system.scheduler, within,
       interval, system.dispatchers.lookup(routerDispatcher)))
 
-  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
+  override def nrOfInstances(sys: ActorSystem): Int = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.

@@ -21,7 +21,7 @@ trait LoggerMessageQueueSemantics
 private[akka] class LoggerMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType
     with ProducesMessageQueue[LoggerMailbox] {
 
-  override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = (owner, system) match {
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): LoggerMailbox = (owner, system) match {
     case (Some(o), Some(s)) ⇒ new LoggerMailbox(o, s)
     case _ ⇒ throw new IllegalArgumentException("no mailbox owner or system given")
   }

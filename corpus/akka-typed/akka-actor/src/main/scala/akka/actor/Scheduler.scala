@@ -49,7 +49,7 @@ trait Scheduler {
     executor: ExecutionContext,
     sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, new Runnable {
-      def run = {
+      def run: Unit = {
         receiver ! message
         if (receiver.isTerminated)
           throw new SchedulerException("timer active for terminated actor")
@@ -78,7 +78,7 @@ trait Scheduler {
     implicit
     executor: ExecutionContext
   ): Cancellable =
-    schedule(initialDelay, interval, new Runnable { override def run = f })
+    schedule(initialDelay, interval, new Runnable { override def run: Unit = f })
 
   /**
    * Schedules a `Runnable` to be run repeatedly with an initial delay and
@@ -116,7 +116,7 @@ trait Scheduler {
     executor: ExecutionContext,
     sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
-      override def run = receiver ! message
+      override def run: Unit = receiver ! message
     })
 
   /**
@@ -129,7 +129,7 @@ trait Scheduler {
     implicit
     executor: ExecutionContext
   ): Cancellable =
-    scheduleOnce(delay, new Runnable { override def run = f })
+    scheduleOnce(delay, new Runnable { override def run: Unit = f })
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that

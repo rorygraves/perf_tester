@@ -88,8 +88,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   import MessageDispatcher._
   import configurator.prerequisites
 
-  val mailboxes = prerequisites.mailboxes
-  val eventStream = prerequisites.eventStream
+  val mailboxes: Mailboxes = prerequisites.mailboxes
+  val eventStream: EventStream = prerequisites.eventStream
 
   @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
   @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
@@ -259,14 +259,14 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
-  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage)
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit
 
   /**
    * Will be called when the dispatcher is to queue an invocation for execution
    *
    * INTERNAL API
    */
-  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope)
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit
 
   /**
    * Suggest to register the provided mailbox for execution
@@ -289,12 +289,12 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   /**
    * INTERNAL API
    */
-  @inline protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
+  @inline protected[akka] final val isThroughputDeadlineTimeDefined: Boolean = throughputDeadlineTime.toMillis > 0
 
   /**
    * INTERNAL API
    */
-  protected[akka] def executeTask(invocation: TaskInvocation)
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached

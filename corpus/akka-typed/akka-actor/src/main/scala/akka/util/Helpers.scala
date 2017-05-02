@@ -14,7 +14,7 @@ import java.util.Locale
 
 object Helpers {
 
-  def toRootLowerCase(s: String) = s.toLowerCase(Locale.ROOT)
+  def toRootLowerCase(s: String): String = s.toLowerCase(Locale.ROOT)
 
   val isWindows: Boolean = toRootLowerCase(System.getProperty("os.name", "")).indexOf("win") >= 0
 

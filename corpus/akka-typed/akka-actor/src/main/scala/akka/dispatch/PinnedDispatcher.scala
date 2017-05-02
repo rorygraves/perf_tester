@@ -34,14 +34,14 @@ class PinnedDispatcher(
   private var owner: ActorCell = _actor
 
   //Relies on an external lock provided by MessageDispatcher.attach
-  protected[akka] override def register(actorCell: ActorCell) = {
+  protected[akka] override def register(actorCell: ActorCell): Unit = {
     val actor = owner
     if ((actor ne null) && actorCell != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     owner = actorCell
     super.register(actorCell)
   }
   //Relies on an external lock provided by MessageDispatcher.detach
-  protected[akka] override def unregister(actor: ActorCell) = {
+  protected[akka] override def unregister(actor: ActorCell): Unit = {
     super.unregister(actor)
     owner = null
   }

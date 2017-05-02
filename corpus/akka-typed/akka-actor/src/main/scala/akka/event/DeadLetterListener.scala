@@ -9,7 +9,7 @@ import akka.event.Logging.Info
 
 class DeadLetterListener extends Actor {
 
-  val eventStream = context.system.eventStream
+  val eventStream: EventStream = context.system.eventStream
   val maxCount = context.system.settings.LogDeadLetters
   var count = 0
 
@@ -25,7 +25,7 @@ class DeadLetterListener extends Actor {
   override def postStop(): Unit =
     eventStream.unsubscribe(self)
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case DeadLetter(message, snd, rcp) ⇒
       count += 1
       val done = maxCount != Int.MaxValue && count >= maxCount

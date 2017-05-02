@@ -89,7 +89,7 @@ class TypedMultiMap[T <: AnyRef, K[_ <: T]] private (private val map: Map[T, Set
   }
 
   override def toString: String = s"TypedMultiMap($map)"
-  override def equals(other: Any) = other match {
+  override def equals(other: Any): Boolean = other match {
     case o: TypedMultiMap[_, _] ⇒ map == o.map
     case _ ⇒ false
   }

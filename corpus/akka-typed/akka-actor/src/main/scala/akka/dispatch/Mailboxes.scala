@@ -91,7 +91,7 @@ private[akka] class Mailboxes(
   private var mailboxSizeWarningIssued = false
   private var mailboxNonZeroPushTimeoutWarningIssued = false
 
-  def getMailboxRequirement(config: Config) = config.getString("mailbox-requirement") match {
+  def getMailboxRequirement(config: Config): Class[_ <: AnyRef] = config.getString("mailbox-requirement") match {
     case NoMailboxRequirement ⇒ classOf[MessageQueue]
     case x ⇒ dynamicAccess.getClassFor[AnyRef](x).get
   }

@@ -373,10 +373,10 @@ private[akka] class ActorCell(
 
   final def isLocal = true
 
-  final def systemImpl = system
-  protected final def guardian = self
-  protected final def lookupRoot = self
-  final def provider = system.provider
+  final def systemImpl: ActorSystemImpl = system
+  protected final def guardian: InternalActorRef = self
+  protected final def lookupRoot: InternalActorRef = self
+  final def provider: ActorRefProvider = system.provider
 
   protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _

@@ -195,14 +195,14 @@ private final case class BackoffOptionsImpl(
     supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider)
 ) extends BackoffOptions {
 
-  val backoffReset = reset.getOrElse(AutoReset(minBackoff))
+  val backoffReset: BackoffReset = reset.getOrElse(AutoReset(minBackoff))
 
-  def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
-  def withManualReset = copy(reset = Some(ManualReset))
-  def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
-  def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider))
+  def withAutoReset(resetBackoff: FiniteDuration): BackoffOptionsImpl = copy(reset = Some(AutoReset(resetBackoff)))
+  def withManualReset: BackoffOptionsImpl = copy(reset = Some(ManualReset))
+  def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy): BackoffOptionsImpl = copy(supervisorStrategy = supervisorStrategy)
+  def withDefaultStoppingStrategy: BackoffOptionsImpl = copy(supervisorStrategy = OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider))
 
-  def props = {
+  def props: Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")

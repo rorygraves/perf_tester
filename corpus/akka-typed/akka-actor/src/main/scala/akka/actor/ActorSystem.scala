@@ -791,7 +791,7 @@ private[akka] class ActorSystemImpl(
   }
 
   def start(): this.type = _start
-  def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
+  def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run: Unit = code }) }
   def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {

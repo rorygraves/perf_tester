@@ -22,7 +22,7 @@ private[io] class UdpSender(
 )
     extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
-  val channel = {
+  val channel: DatagramChannel = {
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket

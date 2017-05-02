@@ -161,7 +161,7 @@ final case class ConsistentHashingRoutingLogic(
       throw new IllegalStateException("defaultAddress not available yet")
     a
   }
-  val vnodes =
+  val vnodes: Int =
     if (virtualNodesFactor == 0) system.settings.DefaultVirtualNodesFactor
     else virtualNodesFactor
 
@@ -295,7 +295,7 @@ final case class ConsistentHashingPool(
   override def createRouter(system: ActorSystem): Router =
     new Router(ConsistentHashingRoutingLogic(system, virtualNodesFactor, hashMapping))
 
-  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
+  override def nrOfInstances(sys: ActorSystem): Int = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.

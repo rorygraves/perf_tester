@@ -23,7 +23,7 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
     system.scheduler.schedule(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
-  override def receive = {
+  override def receive: PartialFunction[Any, Unit] = {
     case r @ Dns.Resolve(name) ⇒
       log.debug("Resolution request for {} from {}", name, sender())
       resolver.forward(r)

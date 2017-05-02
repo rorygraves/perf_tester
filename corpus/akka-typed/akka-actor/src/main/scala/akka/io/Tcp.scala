@@ -6,15 +6,19 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.net.Socket
+
 import akka.io.Inet._
 import com.typesafe.config.Config
+
 import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import akka.util.{ Helpers, ByteString }
+import akka.util.{ByteString, Helpers}
 import akka.util.Helpers.Requiring
 import akka.actor._
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{Iterable => JIterable}
+
+import akka.dispatch.MessageDispatcher
 
 /**
  * TCP Extension for Akka’s IO layer.
@@ -513,7 +517,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    */
   final case class ErrorClosed(cause: String) extends ConnectionClosed {
     override def isErrorClosed = true
-    override def getErrorCause = cause
+    override def getErrorCause: String = cause
   }
 }
 
@@ -577,7 +581,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   def getManager: ActorRef = manager
 
   val bufferPool: BufferPool = new DirectByteBufferPool(Settings.DirectBufferSize, Settings.MaxDirectBufferPoolSize)
-  val fileIoDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
+  val fileIoDispatcher: MessageDispatcher = system.dispatchers.lookup(Settings.FileIODispatcher)
 }
 
 /**

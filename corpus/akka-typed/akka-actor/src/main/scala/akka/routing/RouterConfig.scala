@@ -4,7 +4,7 @@
 package akka.routing
 
 import scala.collection.immutable
-import akka.ConfigurationException
+import akka.{ConfigurationException, routing}
 import akka.actor.ActorContext
 import akka.actor.ActorPath
 import akka.actor.AutoReceivedMessage
@@ -266,7 +266,7 @@ case object FromConfig extends FromConfig {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: routing.FromConfig.type = this
   @inline final def apply(
     resizer: Option[Resizer] = None,
     supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
@@ -357,7 +357,7 @@ case object NoRouter extends NoRouter {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: routing.NoRouter.type = this
 
   def props(routeeProps: Props): Props = routeeProps.withRouter(this)
 
@@ -379,7 +379,7 @@ case object NoRouter extends NoRouter {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: routing.GetRoutees.type = this
 }
 
 /**

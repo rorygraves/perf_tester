@@ -38,8 +38,8 @@ private[akka] object Mailbox {
   final val Scheduled = 2 // Deliberately without type ascription to make it a compile-time constant
   // Shifted by 2: the suspend count!
   final val shouldScheduleMask = 3
-  final val shouldNotProcessMask = ~2
-  final val suspendMask = ~3
+  final val shouldNotProcessMask: Status = ~2
+  final val suspendMask: Status = ~3
   final val suspendUnit = 4
 
   // mailbox debugging helper using println (see below)
@@ -480,8 +480,8 @@ trait MultipleConsumerSemantics
  */
 trait QueueBasedMessageQueue extends MessageQueue with MultipleConsumerSemantics {
   def queue: Queue[Envelope]
-  def numberOfMessages = queue.size
-  def hasMessages = !queue.isEmpty
+  def numberOfMessages: Int = queue.size
+  def hasMessages: Boolean = !queue.isEmpty
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
     if (hasMessages) {
       var envelope = dequeue
@@ -779,7 +779,7 @@ final case class UnboundedDequeBasedMailbox() extends MailboxType with ProducesM
 
 object UnboundedDequeBasedMailbox {
   class MessageQueue extends LinkedBlockingDeque[Envelope] with UnboundedDequeBasedMessageQueue {
-    final val queue = this
+    final val queue: MessageQueue = this
   }
 }
 
@@ -805,7 +805,7 @@ case class BoundedDequeBasedMailbox( final val capacity: Int, override final val
 object BoundedDequeBasedMailbox {
   class MessageQueue(capacity: Int, val pushTimeOut: FiniteDuration)
       extends LinkedBlockingDeque[Envelope](capacity) with BoundedDequeBasedMessageQueue {
-    final val queue = this
+    final val queue: MessageQueue = this
   }
 }
 

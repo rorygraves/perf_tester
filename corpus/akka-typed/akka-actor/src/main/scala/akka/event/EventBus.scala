@@ -55,7 +55,7 @@ trait EventBus {
  */
 trait ActorEventBus extends EventBus {
   type Subscriber = ActorRef
-  protected def compareSubscribers(a: ActorRef, b: ActorRef) = a compareTo b
+  protected def compareSubscribers(a: ActorRef, b: ActorRef): Int = a compareTo b
 }
 
 /**
@@ -267,17 +267,17 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier ⇒
 
     def get(monitored: ActorRef): immutable.TreeSet[ActorRef] = backing.getOrElse(monitored, empty)
 
-    def add(monitored: ActorRef, monitor: ActorRef) = {
+    def add(monitored: ActorRef, monitor: ActorRef): ManagedActorClassificationMappings = {
       val watchers = backing.get(monitored).getOrElse(empty) + monitor
       new ManagedActorClassificationMappings(seqNr + 1, backing.updated(monitored, watchers))
     }
 
-    def remove(monitored: ActorRef, monitor: ActorRef) = {
+    def remove(monitored: ActorRef, monitor: ActorRef): ManagedActorClassificationMappings = {
       val monitors = backing.get(monitored).getOrElse(empty) - monitor
       new ManagedActorClassificationMappings(seqNr + 1, backing.updated(monitored, monitors))
     }
 
-    def remove(monitored: ActorRef) = {
+    def remove(monitored: ActorRef): ManagedActorClassificationMappings = {
       val v = backing - monitored
       new ManagedActorClassificationMappings(seqNr + 1, v)
     }
@@ -290,7 +290,7 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier ⇒
   private val empty = immutable.TreeSet.empty[ActorRef]
 
   /** The unsubscriber takes care of unsubscribing actors, which have terminated. */
-  protected lazy val unsubscriber = ActorClassificationUnsubscriber.start(system, this)
+  protected lazy val unsubscriber: Classifier = ActorClassificationUnsubscriber.start(system, this)
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {

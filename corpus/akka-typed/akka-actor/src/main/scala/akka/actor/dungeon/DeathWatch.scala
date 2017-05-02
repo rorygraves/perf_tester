@@ -4,9 +4,9 @@
 
 package akka.actor.dungeon
 
-import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification }
-import akka.event.Logging.{ Warning, Debug }
-import akka.actor.{ InternalActorRef, Address, Terminated, Actor, ActorRefScope, ActorCell, ActorRef, MinimalActorRef }
+import akka.dispatch.sysmsg.{DeathWatchNotification, Unwatch, Watch}
+import akka.event.Logging.{Debug, Warning}
+import akka.actor.{Actor, ActorCell, ActorPath, ActorRef, ActorRefScope, Address, InternalActorRef, MinimalActorRef, Terminated}
 import akka.event.AddressTerminatedTopic
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
@@ -204,6 +204,6 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 }
 
 private[akka] class UndefinedUidActorRef(ref: ActorRef) extends MinimalActorRef {
-  override val path = ref.path.withUid(ActorCell.undefinedUid)
+  override val path: ActorPath = ref.path.withUid(ActorCell.undefinedUid)
   override def provider = throw new UnsupportedOperationException("UndefinedUidActorRef does not provide")
 }

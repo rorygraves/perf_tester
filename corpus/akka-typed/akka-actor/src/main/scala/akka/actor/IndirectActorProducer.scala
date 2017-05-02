@@ -36,9 +36,9 @@ trait IndirectActorProducer {
 }
 
 private[akka] object IndirectActorProducer {
-  val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
-  val CreatorConsumerClass = classOf[CreatorConsumer]
-  val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
+  val CreatorFunctionConsumerClass: Class[CreatorFunctionConsumer] = classOf[CreatorFunctionConsumer]
+  val CreatorConsumerClass: Class[CreatorConsumer] = classOf[CreatorConsumer]
+  val TypedCreatorFunctionConsumerClass: Class[TypedCreatorFunctionConsumer] = classOf[TypedCreatorFunctionConsumer]
 
   def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
     if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
@@ -67,24 +67,24 @@ private[akka] object IndirectActorProducer {
  * INTERNAL API
  */
 private[akka] class CreatorFunctionConsumer(creator: () ⇒ Actor) extends IndirectActorProducer {
-  override def actorClass = classOf[Actor]
-  override def produce() = creator()
+  override def actorClass: Class[Actor] = classOf[Actor]
+  override def produce(): Actor = creator()
 }
 
 /**
  * INTERNAL API
  */
 private[akka] class CreatorConsumer(clazz: Class[_ <: Actor], creator: Creator[Actor]) extends IndirectActorProducer {
-  override def actorClass = clazz
-  override def produce() = creator.create()
+  override def actorClass: Class[_ <: Actor] = clazz
+  override def produce(): Actor = creator.create()
 }
 
 /**
  * INTERNAL API
  */
 private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator: () ⇒ Actor) extends IndirectActorProducer {
-  override def actorClass = clz
-  override def produce() = creator()
+  override def actorClass: Class[_ <: Actor] = clz
+  override def produce(): Actor = creator()
 }
 
 /**
@@ -92,8 +92,8 @@ private[akka] class TypedCreatorFunctionConsumer(clz: Class[_ <: Actor], creator
  */
 private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutable.Seq[Any]) extends IndirectActorProducer {
   private[this] val constructor = Reflect.findConstructor(clz, args)
-  override def actorClass = clz
-  override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
+  override def actorClass: Class[_ <: Actor] = clz
+  override def produce(): Actor = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
 }
 
 /**
@@ -101,6 +101,6 @@ private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutab
  */
 private[akka] class NoArgsReflectConstructor(clz: Class[_ <: Actor]) extends IndirectActorProducer {
   Reflect.findConstructor(clz, List.empty)
-  override def actorClass = clz
-  override def produce() = Reflect.instantiate(clz)
+  override def actorClass: Class[_ <: Actor] = clz
+  override def produce(): Actor = Reflect.instantiate(clz)
 }

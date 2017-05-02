@@ -45,12 +45,12 @@ private[io] class TcpListener(
 
   context.watch(bind.handler) // sign death pact
 
-  val channel = ServerSocketChannel.open
+  val channel: ServerSocketChannel = ServerSocketChannel.open
   channel.configureBlocking(false)
 
-  var acceptLimit = if (bind.pullMode) 0 else BatchAcceptLimit
+  var acceptLimit: Int = if (bind.pullMode) 0 else BatchAcceptLimit
 
-  val localAddress =
+  val localAddress: Any =
     try {
       val socket = channel.socket
       bind.options.foreach(_.beforeServerSocketBind(socket))
@@ -73,7 +73,7 @@ private[io] class TcpListener(
         context.stop(self)
     }
 
-  override def supervisorStrategy = SelectionHandler.connectionSupervisorStrategy
+  override def supervisorStrategy: SupervisorStrategy = SelectionHandler.connectionSupervisorStrategy
 
   def receive: Receive = {
     case registration: ChannelRegistration ⇒

@@ -441,7 +441,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   import PromiseActorRef._
 
   // This is necessary for weaving the PromiseActorRef into the asked message, i.e. the replyTo pattern.
-  @volatile var messageClassName = _mcn
+  @volatile var messageClassName: String = _mcn
 
   /**
    * As an optimization for the common (local) case we only register this PromiseActorRef

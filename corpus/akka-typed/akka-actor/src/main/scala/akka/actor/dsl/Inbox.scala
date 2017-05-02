@@ -6,10 +6,12 @@ package akka.actor.dsl
 
 import scala.concurrent.Await
 import akka.actor.ActorLogging
+
 import scala.collection.immutable.TreeSet
 import scala.concurrent.duration._
 import akka.actor.Cancellable
 import akka.actor.Actor
+
 import scala.collection.mutable.Queue
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
@@ -17,9 +19,12 @@ import akka.util.Timeout
 import akka.actor.Status
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.pattern.ask
 import akka.actor.ActorDSL
 import akka.actor.Props
+
+import scala.collection.mutable
 
 /**
  * INTERNAL API
@@ -32,10 +37,10 @@ private[akka] object Inbox {
     def client: ActorRef
   }
   private final case class Get(deadline: Deadline, client: ActorRef = null) extends Query {
-    def withClient(c: ActorRef) = copy(client = c)
+    def withClient(c: ActorRef): Get = copy(client = c)
   }
   private final case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
-    def withClient(c: ActorRef) = copy(client = c)
+    def withClient(c: ActorRef): Select = copy(client = c)
   }
   private final case class StartWatch(target: ActorRef)
   private case object Kick
@@ -47,7 +52,7 @@ trait Inbox { this: ActorDSL.type ⇒
   import Inbox._
 
   protected trait InboxExtension { this: Extension ⇒
-    val DSLInboxQueueSize = config.getInt("inbox-size")
+    val DSLInboxQueueSize: Int = config.getInt("inbox-size")
 
     val inboxNr = new AtomicInteger
     val inboxProps = Props(classOf[InboxActor], ActorDSL, DSLInboxQueueSize)
@@ -60,8 +65,8 @@ trait Inbox { this: ActorDSL.type ⇒
   }
 
   private class InboxActor(size: Int) extends Actor with ActorLogging {
-    var clients = Queue.empty[Query]
-    val messages = Queue.empty[Any]
+    var clients: mutable.Queue[Query] = Queue.empty[Query]
+    val messages: mutable.Queue[Any] = Queue.empty[Any]
     var clientsByTimeout = TreeSet.empty[Query]
     var printedWarning = false
 
@@ -93,7 +98,7 @@ trait Inbox { this: ActorDSL.type ⇒
 
     var currentDeadline: Option[(Deadline, Cancellable)] = None
 
-    def receive = ({
+    def receive: PartialFunction[Any, Unit] = ({
       case g: Get ⇒
         if (messages.isEmpty) enqueueQuery(g)
         else sender() ! messages.dequeue()

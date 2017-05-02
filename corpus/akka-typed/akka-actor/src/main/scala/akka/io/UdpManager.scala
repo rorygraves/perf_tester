@@ -45,7 +45,7 @@ import akka.io.Udp._
  */
 private[io] class UdpManager(udp: UdpExt) extends SelectionHandler.SelectorBasedManager(udp.settings, udp.settings.NrOfSelectors) {
 
-  def receive = workerForCommandHandler {
+  def receive: Receive = workerForCommandHandler {
     case b: Bind ⇒
       val commander = sender() // cache because we create a function that will run asynchly
       (registry ⇒ Props(classOf[UdpListener], udp, registry, commander, b))

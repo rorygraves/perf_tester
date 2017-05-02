@@ -186,7 +186,7 @@ final class BackoffSupervisor(
   import context.dispatcher
 
   // to keep binary compatibility with 2.4.1
-  override val supervisorStrategy = strategy match {
+  override val supervisorStrategy: SupervisorStrategy = strategy match {
     case oneForOne: OneForOneStrategy ⇒
       OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
         case ex ⇒
@@ -227,7 +227,7 @@ final class BackoffSupervisor(
       restartCount += 1
   }
 
-  def receive = onTerminated orElse handleBackoff
+  def receive: PartialFunction[Any, Unit] = onTerminated orElse handleBackoff
 }
 
 private[akka] trait HandleBackoff { this: Actor ⇒

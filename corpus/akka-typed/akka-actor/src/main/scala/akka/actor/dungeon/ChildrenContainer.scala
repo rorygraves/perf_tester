@@ -5,9 +5,10 @@
 package akka.actor.dungeon
 
 import scala.collection.immutable
+import akka.actor.{ActorRef, ChildNameReserved, ChildRestartStats, ChildStats, InvalidActorNameException}
+import akka.util.Collections.{EmptyImmutableSeq, PartialImmutableValuesIterable}
 
-import akka.actor.{ InvalidActorNameException, ChildStats, ChildRestartStats, ChildNameReserved, ActorRef }
-import akka.util.Collections.{ EmptyImmutableSeq, PartialImmutableValuesIterable }
+import scala.collection.immutable.TreeMap
 
 /**
  * INTERNAL API
@@ -50,21 +51,21 @@ private[akka] object ChildrenContainer {
   case object Termination extends SuspendReason
 
   class ChildRestartsIterable(stats: immutable.MapLike[_, ChildStats, _]) extends PartialImmutableValuesIterable[ChildStats, ChildRestartStats] {
-    override final def apply(c: ChildStats) = c.asInstanceOf[ChildRestartStats]
-    override final def isDefinedAt(c: ChildStats) = c.isInstanceOf[ChildRestartStats]
-    override final def valuesIterator = stats.valuesIterator
+    override final def apply(c: ChildStats): ChildRestartStats = c.asInstanceOf[ChildRestartStats]
+    override final def isDefinedAt(c: ChildStats): Boolean = c.isInstanceOf[ChildRestartStats]
+    override final def valuesIterator: Iterator[ChildStats] = stats.valuesIterator
   }
 
   class ChildrenIterable(stats: immutable.MapLike[_, ChildStats, _]) extends PartialImmutableValuesIterable[ChildStats, ActorRef] {
-    override final def apply(c: ChildStats) = c.asInstanceOf[ChildRestartStats].child
-    override final def isDefinedAt(c: ChildStats) = c.isInstanceOf[ChildRestartStats]
-    override final def valuesIterator = stats.valuesIterator
+    override final def apply(c: ChildStats): ActorRef = c.asInstanceOf[ChildRestartStats].child
+    override final def isDefinedAt(c: ChildStats): Boolean = c.isInstanceOf[ChildRestartStats]
+    override final def valuesIterator: Iterator[ChildStats] = stats.valuesIterator
   }
 
   trait WaitingForChildren
 
   trait EmptyChildrenContainer extends ChildrenContainer {
-    val emptyStats = immutable.TreeMap.empty[String, ChildStats]
+    val emptyStats: TreeMap[String, ChildStats] = immutable.TreeMap.empty[String, ChildStats]
     override def add(name: String, stats: ChildRestartStats): ChildrenContainer = new NormalChildrenContainer(emptyStats.updated(name, stats))
     override def remove(child: ActorRef): ChildrenContainer = this
     override def getByName(name: String): Option[ChildRestartStats] = None
@@ -134,7 +135,7 @@ private[akka] object ChildrenContainer {
       case _ ⇒ this
     }
 
-    override def toString =
+    override def toString: String =
       if (c.size > 20) c.size + " children"
       else c.mkString("children:\n    ", "\n    ", "")
   }
@@ -200,7 +201,7 @@ private[akka] object ChildrenContainer {
     override def isTerminating: Boolean = reason == Termination
     override def isNormal: Boolean = reason == UserRequest
 
-    override def toString =
+    override def toString: String =
       if (c.size > 20) c.size + " children"
       else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "\n") + toDie
   }

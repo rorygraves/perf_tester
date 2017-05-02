@@ -6,8 +6,10 @@ package akka.actor
 
 import scala.concurrent.duration._
 import akka.pattern.ask
+
 import scala.concurrent.Await
 import akka.util.Helpers.ConfigOps
+import com.typesafe.config.Config
 
 /**
  * This object contains elements which make writing actors and related code
@@ -88,16 +90,16 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
     private case class MkChild(props: Props, name: String) extends NoSerializationVerificationNeeded
     private val boss = system.systemActorOf(Props(
       new Actor {
-        def receive = {
+        def receive: PartialFunction[Any, Unit] = {
           case MkChild(props, name) ⇒ sender() ! context.actorOf(props, name)
           case any ⇒ sender() ! any
         }
       }
     ), "dsl").asInstanceOf[RepointableActorRef]
 
-    lazy val config = system.settings.config.getConfig("akka.actor.dsl")
+    lazy val config: Config = system.settings.config.getConfig("akka.actor.dsl")
 
-    val DSLDefaultTimeout = config.getMillisDuration("default-timeout")
+    val DSLDefaultTimeout: FiniteDuration = config.getMillisDuration("default-timeout")
 
     def mkChild(p: Props, name: String): ActorRef =
       if (boss.isStarted)

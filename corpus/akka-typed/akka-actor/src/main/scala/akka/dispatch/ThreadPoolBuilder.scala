@@ -4,24 +4,14 @@
 
 package akka.dispatch
 
+import java.util
 import java.util.Collection
-import scala.concurrent.{ BlockContext, CanAwait }
+
+import scala.concurrent.{BlockContext, CanAwait}
 import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin._
-import java.util.concurrent.{
-  ArrayBlockingQueue,
-  BlockingQueue,
-  Callable,
-  ExecutorService,
-  LinkedBlockingQueue,
-  RejectedExecutionHandler,
-  RejectedExecutionException,
-  SynchronousQueue,
-  TimeUnit,
-  ThreadFactory,
-  ThreadPoolExecutor
-}
-import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
+import java.util.concurrent.{ForkJoinPool => _, ForkJoinWorkerThread => _, _}
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 object ThreadPoolConfig {
   type QueueFactory = () ⇒ BlockingQueue[Runnable]
@@ -159,7 +149,7 @@ final case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
 
 object MonitorableThreadFactory {
   val doNothing: Thread.UncaughtExceptionHandler =
-    new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable) = () }
+    new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable): Unit = () }
 
   private[akka] class AkkaForkJoinWorkerThread(_pool: ForkJoinPool) extends ForkJoinWorkerThread(_pool) with BlockContext {
     override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
@@ -169,7 +159,7 @@ object MonitorableThreadFactory {
           result.set(Some(thunk))
           true
         }
-        def isReleasable = result.get.isDefined
+        def isReleasable: Boolean = result.get.isDefined
       })
       result.get.get // Exception intended if None
     }
@@ -211,31 +201,31 @@ trait ExecutorServiceDelegate extends ExecutorService {
 
   def executor: ExecutorService
 
-  def execute(command: Runnable) = executor.execute(command)
+  def execute(command: Runnable): Unit = executor.execute(command)
 
   def shutdown() { executor.shutdown() }
 
-  def shutdownNow() = executor.shutdownNow()
+  def shutdownNow(): util.List[Runnable] = executor.shutdownNow()
 
-  def isShutdown = executor.isShutdown
+  def isShutdown: Boolean = executor.isShutdown
 
-  def isTerminated = executor.isTerminated
+  def isTerminated: Boolean = executor.isTerminated
 
-  def awaitTermination(l: Long, timeUnit: TimeUnit) = executor.awaitTermination(l, timeUnit)
+  def awaitTermination(l: Long, timeUnit: TimeUnit): Boolean = executor.awaitTermination(l, timeUnit)
 
-  def submit[T](callable: Callable[T]) = executor.submit(callable)
+  def submit[T](callable: Callable[T]): Future[T] = executor.submit(callable)
 
-  def submit[T](runnable: Runnable, t: T) = executor.submit(runnable, t)
+  def submit[T](runnable: Runnable, t: T): Future[T] = executor.submit(runnable, t)
 
-  def submit(runnable: Runnable) = executor.submit(runnable)
+  def submit(runnable: Runnable): Future[_] = executor.submit(runnable)
 
-  def invokeAll[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAll(callables)
+  def invokeAll[T](callables: Collection[_ <: Callable[T]]): util.List[Future[T]] = executor.invokeAll(callables)
 
-  def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAll(callables, l, timeUnit)
+  def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit): util.List[Future[T]] = executor.invokeAll(callables, l, timeUnit)
 
-  def invokeAny[T](callables: Collection[_ <: Callable[T]]) = executor.invokeAny(callables)
+  def invokeAny[T](callables: Collection[_ <: Callable[T]]): T = executor.invokeAny(callables)
 
-  def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = executor.invokeAny(callables, l, timeUnit)
+  def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit): T = executor.invokeAny(callables, l, timeUnit)
 }
 
 /**

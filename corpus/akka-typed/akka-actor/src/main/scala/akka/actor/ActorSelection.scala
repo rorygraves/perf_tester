@@ -50,7 +50,7 @@ abstract class ActorSelection extends Serializable {
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
+  def forward(message: Any)(implicit context: ActorContext): Unit = tell(message, context.sender())
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
@@ -181,8 +181,8 @@ object ActorSelection {
         else SelectChildName(x)
     })(scala.collection.breakOut)
     new ActorSelection with ScalaActorSelection {
-      override val anchor = anchorRef
-      override val path = compiled
+      override val anchor: ActorRef = anchorRef
+      override val path: immutable.IndexedSeq[SelectionPathElement] = compiled
     }
   }
 
@@ -263,7 +263,7 @@ object ActorSelection {
 trait ScalaActorSelection {
   this: ActorSelection ⇒
 
-  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
+  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = tell(msg, sender)
 }
 
 /**

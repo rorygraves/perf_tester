@@ -29,7 +29,7 @@ private[io] class TcpIncomingConnection(
 
   registry.register(channel, initialOps = 0)
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case registration: ChannelRegistration ⇒ completeConnect(registration, bindHandler, options)
   }
 }

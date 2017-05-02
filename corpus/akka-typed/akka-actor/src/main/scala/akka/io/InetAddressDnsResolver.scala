@@ -9,10 +9,10 @@ import com.typesafe.config.Config
 import scala.collection.immutable
 
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor {
-  val positiveTtl = config.getDuration("positive-ttl", TimeUnit.MILLISECONDS)
-  val negativeTtl = config.getDuration("negative-ttl", TimeUnit.MILLISECONDS)
+  val positiveTtl: Long = config.getDuration("positive-ttl", TimeUnit.MILLISECONDS)
+  val negativeTtl: Long = config.getDuration("negative-ttl", TimeUnit.MILLISECONDS)
 
-  override def receive = {
+  override def receive: PartialFunction[Any, Unit] = {
     case Dns.Resolve(name) ⇒
       val answer = cache.cached(name) match {
         case Some(a) ⇒ a

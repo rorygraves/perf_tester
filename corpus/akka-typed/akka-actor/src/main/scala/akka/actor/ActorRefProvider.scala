@@ -395,7 +395,7 @@ private[akka] object LocalActorRefProvider {
   private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor
       with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
-    def receive = {
+    def receive: PartialFunction[Any, Unit] = {
       case Terminated(_) ⇒ context.stop(self)
       case StopChild(child) ⇒ context.stop(child)
     }
@@ -413,7 +413,7 @@ private[akka] object LocalActorRefProvider {
 
     var terminationHooks = Set.empty[ActorRef]
 
-    def receive = {
+    def receive: PartialFunction[Any, Unit] = {
       case Terminated(`guardian`) ⇒
         // time for the systemGuardian to stop, but first notify all the
         // termination hooks, they will reply with TerminationHookDone
@@ -513,11 +513,11 @@ private[akka] class LocalActorRefProvider private[akka] (
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: InternalActorRef = new MinimalActorRef {
     val causeOfTermination: Promise[Terminated] = Promise[Terminated]()
 
-    val path = rootPath / "bubble-walker"
+    val path: ActorPath = rootPath / "bubble-walker"
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    def isWalking = causeOfTermination.future.isCompleted == false
+    def isWalking: Boolean = causeOfTermination.future.isCompleted == false
 
     override def stop(): Unit = {
       causeOfTermination.trySuccess(Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent

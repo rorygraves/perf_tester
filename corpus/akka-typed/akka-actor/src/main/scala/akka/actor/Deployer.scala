@@ -6,6 +6,7 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor
 import akka.routing._
 import akka.util.WildcardIndex
 import com.typesafe.config._
@@ -106,7 +107,7 @@ case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: actor.LocalScope.type = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -123,7 +124,7 @@ case object NoScopeGiven extends NoScopeGiven {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: actor.NoScopeGiven.type = this
 }
 
 /**
@@ -136,7 +137,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   private val resizerEnabled: Config = ConfigFactory.parseString("resizer.enabled=on")
   private val deployments = new AtomicReference(WildcardIndex[Deploy]())
   private val config = settings.config.getConfig("akka.actor.deployment")
-  protected val default = config.getConfig("default")
+  protected val default: Config = config.getConfig("default")
   val routerTypeMapping: Map[String, String] =
     settings.config.getConfig("akka.actor.router.type-mapping").root.unwrapped.asScala.collect {
       case (key, value: String) ⇒ (key → value)

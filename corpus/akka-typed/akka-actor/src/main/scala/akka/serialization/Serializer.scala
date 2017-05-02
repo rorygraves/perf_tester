@@ -371,7 +371,7 @@ object DisabledJavaSerializer {
  * This is a special Serializer that Serializes and deserializes nulls only
  */
 class NullSerializer extends Serializer {
-  val nullAsBytes = Array[Byte]()
+  val nullAsBytes: Array[Byte] = Array[Byte]()
   def includeManifest: Boolean = false
   def identifier = 0
   def toBinary(o: AnyRef): Array[Byte] = nullAsBytes

@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.AkkaException
+import akka.{AkkaException, actor}
 import akka.event.LoggingAdapter
 
 import scala.annotation.tailrec
@@ -40,7 +40,7 @@ case object PoisonPill extends PoisonPill {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: actor.PoisonPill.type = this
 }
 
 abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
@@ -53,7 +53,7 @@ case object Kill extends Kill {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: actor.Kill.type = this
 }
 
 /**
@@ -141,7 +141,7 @@ case object ReceiveTimeout extends ReceiveTimeout {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: actor.ReceiveTimeout.type = this
 }
 
 /**
@@ -484,7 +484,7 @@ trait Actor {
    * self ! message
    * </pre>
    */
-  implicit final val self = context.self //MUST BE A VAL, TRUST ME
+  implicit final val self: ActorRef = context.self //MUST BE A VAL, TRUST ME
 
   /**
    * The reference sender Actor of the last received message.

@@ -23,10 +23,10 @@ object LineNumbers {
   case object NoSourceInfo extends Result
   final case class UnknownSourceFormat(explanation: String) extends Result
   final case class SourceFile(filename: String) extends Result {
-    override def toString = filename
+    override def toString: String = filename
   }
   final case class SourceFileLines(filename: String, from: Int, to: Int) extends Result {
-    override def toString = if (from != to) s"$filename:$from-$to" else s"$filename:$from"
+    override def toString: String = if (from != to) s"$filename:$from-$to" else s"$filename:$from"
   }
 
   /**

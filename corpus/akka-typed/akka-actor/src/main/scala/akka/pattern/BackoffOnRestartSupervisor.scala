@@ -29,7 +29,7 @@ private class BackoffOnRestartSupervisor(
   import context._
   import BackoffSupervisor._
 
-  override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
+  override val supervisorStrategy: OneForOneStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
       val defaultDirective: Directive =
         super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) ⇒ Escalate)
@@ -79,5 +79,5 @@ private class BackoffOnRestartSupervisor(
       stop(self)
   }
 
-  def receive = onTerminated orElse handleBackoff
+  def receive: PartialFunction[Any, Unit] = onTerminated orElse handleBackoff
 }

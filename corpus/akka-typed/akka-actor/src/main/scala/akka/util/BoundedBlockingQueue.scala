@@ -229,7 +229,7 @@ class BoundedBlockingQueue[E <: AnyRef](
       val elements = backing.toArray
       new Iterator[E] {
         var at = 0
-        var last = -1
+        var last: Int = -1
 
         def hasNext(): Boolean = at < elements.length
 

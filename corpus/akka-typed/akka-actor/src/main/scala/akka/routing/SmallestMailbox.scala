@@ -196,7 +196,7 @@ final case class SmallestMailboxPool(
 
   override def createRouter(system: ActorSystem): Router = new Router(SmallestMailboxRoutingLogic())
 
-  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
+  override def nrOfInstances(sys: ActorSystem): Int = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.

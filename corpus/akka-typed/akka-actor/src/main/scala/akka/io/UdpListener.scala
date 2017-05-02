@@ -5,13 +5,14 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
+import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.{ ByteString, Helpers }
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
+import akka.util.{ByteString, Helpers}
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
 import akka.io.Udp._
@@ -34,12 +35,12 @@ private[io] class UdpListener(
 
   context.watch(bind.handler) // sign death pact
 
-  val channel = bind.options.collectFirst {
+  val channel: DatagramChannel = bind.options.collectFirst {
     case creator: DatagramChannelCreator ⇒ creator
   }.getOrElse(DatagramChannelCreator()).create()
   channel.configureBlocking(false)
 
-  val localAddress =
+  val localAddress: Any =
     try {
       val socket = channel.socket
       bind.options.foreach(_.beforeDatagramBind(socket))

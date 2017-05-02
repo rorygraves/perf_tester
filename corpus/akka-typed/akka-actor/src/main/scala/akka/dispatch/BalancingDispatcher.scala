@@ -48,7 +48,7 @@ private[akka] class BalancingDispatcher(
    */
   private[akka] val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
-      def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
+      def compare(l: ActorCell, r: ActorCell): Int = l.self.path compareTo r.self.path
     })
   )
 
@@ -87,7 +87,7 @@ private[akka] class BalancingDispatcher(
     teamWork()
   }
 
-  override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
+  override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
     messageQueue.enqueue(receiver.self, invocation)
     if (!registerForExecution(receiver.mailbox, false, false)) teamWork()
   }

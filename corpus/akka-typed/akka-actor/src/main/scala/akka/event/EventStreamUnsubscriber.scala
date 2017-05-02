@@ -28,7 +28,7 @@ protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: B
     eventStream initUnsubscriber self
   }
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case Register(actor) ⇒
       if (debug) eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
       context watch actor
@@ -65,7 +65,7 @@ private[akka] object EventStreamUnsubscriber {
   private def props(eventStream: EventStream, debug: Boolean) =
     Props(classOf[EventStreamUnsubscriber], eventStream, debug)
 
-  def start(system: ActorSystem, stream: EventStream) = {
+  def start(system: ActorSystem, stream: EventStream): ActorRef = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system.asInstanceOf[ExtendedActorSystem]
       .systemActorOf(props(stream, debug), "eventStreamUnsubscriber-" + unsubscribersCount.incrementAndGet())

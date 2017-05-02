@@ -12,13 +12,13 @@ import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
 import akka.util.Helpers.toRootLowerCase
-import akka.{ AkkaException, ConfigurationException }
+import akka.{AkkaException, ConfigurationException, event}
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
-import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.{NoStackTrace, NonFatal}
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -42,7 +42,7 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Query currently set log level. See object Logging for more information.
    */
-  def logLevel = _logLevel
+  def logLevel: LogLevel = _logLevel
 
   /**
    * Change log level: default loggers (i.e. from configuration file) are
@@ -128,7 +128,7 @@ trait LoggingBus extends ActorEventBus {
       try {
         if (system.settings.DebugUnhandledMessage)
           subscribe(system.systemActorOf(Props(new Actor {
-            def receive = {
+            def receive: PartialFunction[Any, Unit] = {
               case UnhandledMessage(msg, sender, rcp) ⇒
                 publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
             }
@@ -269,19 +269,19 @@ class DummyClassForStringSources
  */
 object LogSource {
   implicit val fromString: LogSource[String] = new LogSource[String] {
-    def genString(s: String) = s
-    override def genString(s: String, system: ActorSystem) = s + "(" + system + ")"
-    override def getClazz(s: String) = classOf[DummyClassForStringSources]
+    def genString(s: String): String = s
+    override def genString(s: String, system: ActorSystem): String = s + "(" + system + ")"
+    override def getClazz(s: String): Class[DummyClassForStringSources] = classOf[DummyClassForStringSources]
   }
 
   implicit val fromActor: LogSource[Actor] = new LogSource[Actor] {
-    def genString(a: Actor) = fromActorRef.genString(a.self)
-    override def genString(a: Actor, system: ActorSystem) = fromActorRef.genString(a.self, system)
+    def genString(a: Actor): String = fromActorRef.genString(a.self)
+    override def genString(a: Actor, system: ActorSystem): String = fromActorRef.genString(a.self, system)
   }
 
   implicit val fromActorRef: LogSource[ActorRef] = new LogSource[ActorRef] {
-    def genString(a: ActorRef) = a.path.toString
-    override def genString(a: ActorRef, system: ActorSystem) = try {
+    def genString(a: ActorRef): String = a.path.toString
+    override def genString(a: ActorRef, system: ActorSystem): String = try {
       a.path.toStringWithAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
     } catch {
       // it can fail if the ActorSystem (remoting) is not completely started yet
@@ -419,7 +419,7 @@ object Logging {
    */
   private[akka] class LogExt(system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
-    def id() = loggerId.incrementAndGet()
+    def id(): Int = loggerId.incrementAndGet()
   }
 
   /**
@@ -821,7 +821,7 @@ object Logging {
   sealed trait LogEventWithMarker extends LogEvent {
     def marker: LogMarker
     /** Appends the marker to the Debug/Info/Warning/Error toString representations */
-    override def toString = {
+    override def toString: String = {
       val s = super.toString
       s.substring(0, s.length - 1) + "," + marker + ")"
     }
@@ -847,7 +847,7 @@ object Logging {
     /**
      * Java API: get the singleton instance
      */
-    def getInstance = this
+    def getInstance: event.Logging.LoggerInitialized.type = this
   }
 
   /**
@@ -1074,7 +1074,7 @@ object Logging {
 trait LoggingAdapter {
 
   type MDC = Logging.MDC
-  def mdc = Logging.emptyMDC
+  def mdc: MDC = Logging.emptyMDC
 
   /*
    * implement these as precisely as needed/possible: always returning true
@@ -1323,10 +1323,10 @@ class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFil
   def this(settings: Settings, eventStream: EventStream) = this(() ⇒ eventStream.logLevel)
 
   import Logging._
-  def isErrorEnabled(logClass: Class[_], logSource: String) = logLevel() >= ErrorLevel
-  def isWarningEnabled(logClass: Class[_], logSource: String) = logLevel() >= WarningLevel
-  def isInfoEnabled(logClass: Class[_], logSource: String) = logLevel() >= InfoLevel
-  def isDebugEnabled(logClass: Class[_], logSource: String) = logLevel() >= DebugLevel
+  def isErrorEnabled(logClass: Class[_], logSource: String): Boolean = logLevel() >= ErrorLevel
+  def isWarningEnabled(logClass: Class[_], logSource: String): Boolean = logLevel() >= WarningLevel
+  def isInfoEnabled(logClass: Class[_], logSource: String): Boolean = logLevel() >= InfoLevel
+  def isDebugEnabled(logClass: Class[_], logSource: String): Boolean = logLevel() >= DebugLevel
 }
 
 /**
@@ -1655,10 +1655,10 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
 
   import Logging._
 
-  def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)
-  def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource)
-  def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
-  def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
+  def isErrorEnabled: Boolean = loggingFilter.isErrorEnabled(logClass, logSource)
+  def isWarningEnabled: Boolean = loggingFilter.isWarningEnabled(logClass, logSource)
+  def isInfoEnabled: Boolean = loggingFilter.isInfoEnabled(logClass, logSource)
+  def isDebugEnabled: Boolean = loggingFilter.isDebugEnabled(logClass, logSource)
 
   protected def notifyError(message: String): Unit =
     bus.publish(Error(logSource, logClass, message, mdc))
@@ -1681,7 +1681,7 @@ object NoLogging extends LoggingAdapter {
    * Java API to return the reference to NoLogging
    * @return The NoLogging instance
    */
-  def getInstance = this
+  def getInstance: NoLogging.type = this
 
   final override def isErrorEnabled = false
   final override def isWarningEnabled = false
@@ -1703,7 +1703,7 @@ object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[Stri
    * Java API to return the reference to NoLogging
    * @return The NoLogging instance
    */
-  def getInstance = this
+  def getInstance: NoMarkerLogging.type = this
 
   final override def isErrorEnabled = false
   final override def isWarningEnabled = false

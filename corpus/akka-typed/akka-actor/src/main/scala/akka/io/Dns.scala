@@ -22,7 +22,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   sealed trait Command
 
   case class Resolve(name: String) extends Command with ConsistentHashable {
-    override def consistentHashKey = name
+    override def consistentHashKey: String = name
   }
 
   case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address]) extends Command {

@@ -94,7 +94,7 @@ final case class BalancingPool(
    */
   def withDispatcher(dispatcherId: String): BalancingPool = copy(routerDispatcher = dispatcherId)
 
-  def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
+  def nrOfInstances(sys: ActorSystem): Int = this.nrOfInstances
 
   /**
    * INTERNAL API

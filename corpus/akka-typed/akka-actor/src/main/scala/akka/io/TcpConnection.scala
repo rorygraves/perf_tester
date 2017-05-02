@@ -49,7 +49,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def unsignDeathPact(): Unit =
     if (watchedActor ne context.system.deadLetters) context.unwatch(watchedActor)
 
-  def writePending = pendingWrite ne EmptyPendingWrite
+  def writePending: Boolean = pendingWrite ne EmptyPendingWrite
 
   // STATES
 
@@ -263,7 +263,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   def doWrite(info: ConnectionInfo): Unit = pendingWrite = pendingWrite.doWrite(info)
 
-  def closeReason =
+  def closeReason: ConnectionClosed =
     if (channel.socket.isOutputShutdown) ConfirmedClosed
     else PeerClosed
 

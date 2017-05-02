@@ -22,7 +22,7 @@ object FSM {
    */
   object NullFunction extends PartialFunction[Any, Nothing] {
     def isDefinedAt(o: Any) = false
-    def apply(o: Any) = sys.error("undefined")
+    def apply(o: Any): Nothing = sys.error("undefined")
   }
 
   /**
@@ -114,7 +114,7 @@ object FSM {
   object `->` {
     def unapply[S](in: (S, S)) = Some(in)
   }
-  val `→` = `->`
+  val `→`: `->`.type = `->`
 
   /**
    * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
@@ -322,7 +322,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * This extractor is just convenience for matching a (S, S) pair, including a
    * reminder what the new state is.
    */
-  val `->` = FSM.`->`
+  val `->`: FSM.`->`.type = FSM.`->`
 
   /**
    * This case object is received in case of a state timeout.
@@ -540,7 +540,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   /**
    * Return next state data (available in onTransition handlers)
    */
-  final def nextStateData = nextState match {
+  final def nextStateData: D = nextState match {
     case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
     case x ⇒ x.stateData
   }

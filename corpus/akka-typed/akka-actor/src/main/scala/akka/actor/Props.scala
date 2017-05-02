@@ -39,7 +39,7 @@ object Props extends AbstractProps {
   /**
    * A Props instance whose creator will create an actor that doesn't respond to any message
    */
-  final val empty = Props[EmptyActor]
+  final val empty: Props = Props[EmptyActor]
 
   /**
    * The default Props instance, uses the settings from the Props object starting with default*.
@@ -52,7 +52,7 @@ object Props extends AbstractProps {
    * (Not because it is so immensely complicated, only because we might remove it if no longer needed internally)
    */
   private[akka] class EmptyActor extends Actor {
-    def receive = Actor.emptyBehavior
+    def receive: Actor.emptyBehavior.type = Actor.emptyBehavior
   }
 
   /**

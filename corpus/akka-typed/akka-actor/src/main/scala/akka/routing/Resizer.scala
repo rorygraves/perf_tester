@@ -259,7 +259,7 @@ private[akka] final class ResizablePoolCell(
     extends RoutedActorCell(_system, _ref, _routerProps, _routerDispatcher, _routeeProps, _supervisor) {
 
   require(pool.resizer.isDefined, "RouterConfig must be a Pool with defined resizer")
-  val resizer = pool.resizer.get
+  val resizer: Resizer = pool.resizer.get
   private val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
 
@@ -320,13 +320,13 @@ private[akka] class ResizablePoolActor(supervisorStrategy: SupervisorStrategy)
     extends RouterPoolActor(supervisorStrategy) {
   import ResizablePoolActor._
 
-  val resizerCell = context match {
+  val resizerCell: ResizablePoolCell = context match {
     case x: ResizablePoolCell ⇒ x
     case _ ⇒
       throw ActorInitializationException("Resizable router actor can only be used when resizer is defined, not in " + context.getClass)
   }
 
-  override def receive = ({
+  override def receive: PartialFunction[Any, Unit] = ({
     case Resize ⇒
       resizerCell.resize(initial = false)
   }: Actor.Receive) orElse super.receive

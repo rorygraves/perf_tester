@@ -87,7 +87,7 @@ object Inet {
 
   object DatagramChannelCreator {
     val default = new DatagramChannelCreator()
-    def apply() = default
+    def apply(): DatagramChannelCreator = default
   }
 
   object SO {
