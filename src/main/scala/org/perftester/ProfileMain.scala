@@ -3,7 +3,7 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, Path}
+import ammonite.ops.{%%, Path, _}
 import org.perftester.results.{ResultReader, RunResult}
 
 import scala.collection.mutable
@@ -12,7 +12,6 @@ import scala.collection.mutable
 object ProfileMain {
 
   def main(args: Array[String]): Unit = {
-    //    readResults(TestConfig("001","xxx",Nil),1,Path("/workspace/perf_tester/src/test/resources/data/run_00_baseline_1.csv"))
     if (args.length != 3) {
       println("Usage: ProfileMain <checkoutDir> <testDir> <outputDir>")
       System.exit(1)
@@ -20,41 +19,31 @@ object ProfileMain {
     val checkoutDir = Path(new File(args(0)).getAbsolutePath)
     val testDir = Path(new File(args(1)).getAbsolutePath)
     val outputDir = Path(new File(args(2)).getAbsolutePath)
-    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, 60)
+    mkdir! outputDir
+    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, iterations = 1)
     runBenchmark(envConfig)
   }
 
-  val isWindows = System.getProperty("os.name").startsWith("Windows")
+  val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
   def printAggResults(testConfig: TestConfig, results: RunResult#Detail): Unit = {
     val allWallClockTimeAvg = results.allWallClockMS
-//    val jvmWallClockTimeAvg = results.phaseWallClockMS("jvm")
-
     val allCpuTimeAvg = results.allCPUTime
-//    val jvmCpuTimeAvg = results.phaseCpuMS("jvm")
-
     val allAllocatedBytes = results.allAllocated
-//    val jvmAllocatedBytes = results.phaseAllocatedBytes("jvm")
-
     val allWallMsStr = allWallClockTimeAvg.formatted(6,2)
-//    val jvmWallMsStr = jvmWallClockTimeAvg.formatted(6,2)
     val allCpuMsStr = allCpuTimeAvg.formatted(6,2)
-//    val jvmCpuMsStr = jvmCpuTimeAvg.formatted(6,2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6,2)
-//    val jvmAllocatedBytesStr = jvmAllocatedBytes.formatted(6,2)
-
-//    println(f"${testConfig.id}%25s\t$allWallMsStr%25s\t$jvmWallMsStr%25s\t$allCpuMsStr%25s\t$jvmCpuMsStr%25s\t$allAllocatedBytesStr%25s\t$jvmAllocatedBytesStr%25s")
-    println(f"${testConfig.id}%25s\t$allWallMsStr%25s\t$allCpuMsStr%25s\t$allAllocatedBytesStr%25s")
+    println("%25s\t%25s\t%25s\t%25s".format(testConfig.id, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
 
   }
 
+  // -XX:MaxInlineLevel=32
+  //-XX:MaxInlineSize=35
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
     val commitsWithId = List(
-      TestConfig("00_baseline", BuildFromGit("cdfba554003cb41ad8b4def46662c7379955eabb")),
-      TestConfig("01_genBcodeBaseDisabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:false")),
-      TestConfig("02_genBCodeEnabled", BuildFromGit("7e6f32edffcf34cfc0b47bb41a58666ff0e7b873"), List("-YgenBcodeParallel:true")),
-      TestConfig("03_genBcodeBaseDisabled_BT", BuildFromGit("45bc7a777f50ad667a8831cc91b9c963b1f9abce"), List("-YgenBcodeParallel:false")),
-      TestConfig("04_genBCodeEnabled_BT", BuildFromGit("45bc7a777f50ad667a8831cc91b9c963b1f9abce"), List("-YgenBcodeParallel:true"))
+      TestConfig("00_baseline", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List()),
+      TestConfig("01_highMI", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32")),
+      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
     )
 
     val results = commitsWithId map { testConfig =>
@@ -72,27 +61,27 @@ object ProfileMain {
       printAggResults(config, configResult.all)
     }
 
-    heading("after 10 90%")
-    results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.filterIteration(10, 10000).std)
-    }
-
-    heading("after 10 90% JVM, no GC")
-    results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
-    }
+//    heading("after 10 90%")
+//    results.foreach { case (config, configResult) =>
+//      printAggResults(config, configResult.filterIteration(10, 10000).std)
+//    }
+//
+//    heading("after 10 90% JVM, no GC")
+//    results.foreach { case (config, configResult) =>
+//      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
+//    }
 
   }
 
   private val lastBuiltScalac = mutable.Map[Path, String]()
   def executeRuns(envConfig: EnvironmentConfig, testConfig: TestConfig, repeat: Int): RunResult = {
     val (dir, reused) = testConfig match {
-      case TestConfig(id, BuildFromGit(sha,customDir), _) =>
+      case TestConfig(id, BuildFromGit(sha,customDir), _, _) =>
         val dir = customDir.getOrElse(envConfig.checkoutDir)
-        val reused = lastBuiltScalac.get(dir) == Some(sha)
+        val reused = lastBuiltScalac.get(dir).contains(sha)
         lastBuiltScalac(dir) = sha
         (dir, reused)
-      case TestConfig(id, BuildFromDir(dir), _) =>
+      case TestConfig(_, BuildFromDir(dir), _, _) =>
     (dir, lastBuiltScalac.contains(dir))
 
     }
@@ -104,7 +93,7 @@ object ProfileMain {
     if (!reused) rebuildScalaC(testConfig.buildDefn, dir)
     val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
 
-    executeTest(envConfig, testConfig, profileOutputFile, repeat)
+//    executeTest(envConfig, testConfig, profileOutputFile, repeat)
     ResultReader.readResults(testConfig, profileOutputFile, repeat)
   }
 
@@ -113,10 +102,10 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         %%("git", "fetch")(dir)
         %%("git", "reset", "--hard", hash)(dir)
-        %%("git", "cherry-pick", "bb866a7ceb47faeb605e96904e12d3b04629ffd3")(dir) //profiler
+        %%("git", "cherry-pick", "e929236a4b419412fda44639bbe06313fc7c05bb")(dir) //profiler
       case _ =>
     }
-    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir)
+    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
   }
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile:Path, repeats: Int): Unit = {
@@ -129,23 +118,24 @@ object ProfileMain {
     val args = List(s"++2.12.1=$mkPackPath", //"-debug",
       s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""") ++
       List.fill(repeats)(List("clean", "akka-actor/compile")).flatten
-    runSbt(args, envConfig.testDir)
+    runSbt(args, envConfig.testDir, testConfig.extraJVMArgs)
   }
 
-  val sbtCommandLine: List[String] = {
-    val sbt = new File("lib/sbt-launch.jar").getAbsoluteFile
-    require(sbt.exists())
-    List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G", "-cp", sbt.toString, "xsbt.boot.Boot")
+
+  def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
+    val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
+    require(sbt.exists(),"sbt-launch.jar must exist in sbtlib directory")
+    List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
-  def runSbt(command: List[String], dir: Path): Unit = {
+  def runSbt(command: List[String], dir: Path, extraJVMArgs: List[String]): Unit = {
     import collection.JavaConverters._
 
     val escaped = if (isWindows) command map {
       s => s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else command
 
-    val fullCommand = (sbtCommandLine ::: escaped)
+    val fullCommand = sbtCommandLine(extraJVMArgs) ::: escaped
     println(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
     val proc = new ProcessBuilder(fullCommand.asJava)
     proc.directory(dir.toIO)

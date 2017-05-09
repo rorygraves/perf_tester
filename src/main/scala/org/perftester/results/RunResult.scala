@@ -51,7 +51,7 @@ case class RunResult (testConfig: TestConfig, rawData : Seq[PhaseResults], itera
       String.format(s"%$s.${p}f", new java.lang.Double(v))
     }
     def formatted(s:Int,p:Int) = {
-      (s"${format(s,p,mean)} [+${format(4,2,atPC(1))}% -${format(4,2,atPC(0))}%]")
+      s"${format(s, p, mean)} [+${format(4, 2, atPC(1))}% -${format(4, 2, atPC(0))}%]"
     }
   }
   object Distribution {
@@ -62,13 +62,13 @@ case class RunResult (testConfig: TestConfig, rawData : Seq[PhaseResults], itera
     }
   }
 
-  lazy val byPhaseId = rawData.groupBy(_.phaseId) map {case (k,v) => (k -> new Aggregate(v)) }
-  lazy val byPhaseName = rawData.groupBy(_.phaseName) map {case (k,v) => (k -> new Aggregate(v)) }
-  lazy val byIteration = rawData.groupBy(_.iterationId) map {case (k,v) => (k -> new Aggregate(v)) }
+  lazy val byPhaseId = rawData.groupBy(_.phaseId) map {case (k,v) => k -> new Aggregate(v) }
+  lazy val byPhaseName = rawData.groupBy(_.phaseName) map {case (k,v) => k -> new Aggregate(v) }
+  lazy val byIteration = rawData.groupBy(_.iterationId) map {case (k,v) => k -> new Aggregate(v) }
 
 
   lazy val totals = {
-    val byIteration = rawData.groupBy(_.iterationId) map {case (k,v) => (k -> new Aggregate(v).totals) }
+    val byIteration = rawData.groupBy(_.iterationId) map {case (k,v) => k -> new Aggregate(v).totals }
     new Aggregate(byIteration.values.toList)
   }
 
