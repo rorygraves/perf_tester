@@ -3,7 +3,7 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, Path, _}
+import ammonite.ops.{%%, Path}
 import org.perftester.results.{ResultReader, RunResult}
 
 import scala.collection.mutable
@@ -12,16 +12,14 @@ import scala.collection.mutable
 object ProfileMain {
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 3) {
-      println("Usage: ProfileMain <checkoutDir> <testDir> <outputDir>")
-      System.exit(1)
+    // parser.parse returns Option[C]
+    PerfTesterParser.parser.parse(args, EnvironmentConfig()) match {
+      case Some(envConfig) =>
+        runBenchmark(envConfig)
+
+      case None =>
+      // arguments are bad, error message will have been displayed
     }
-    val checkoutDir = Path(new File(args(0)).getAbsolutePath)
-    val testDir = Path(new File(args(1)).getAbsolutePath)
-    val outputDir = Path(new File(args(2)).getAbsolutePath)
-    mkdir! outputDir
-    val envConfig = EnvironmentConfig(checkoutDir, testDir, outputDir, iterations = 1)
-    runBenchmark(envConfig)
   }
 
   val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
@@ -39,11 +37,17 @@ object ProfileMain {
 
   // -XX:MaxInlineLevel=32
   //-XX:MaxInlineSize=35
+
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
+
+    val overwriteResults = false
+    val runWithDebug = envConfig.runWithDebug
+
+
     val commitsWithId = List(
-      TestConfig("00_baseline", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List()),
-      TestConfig("01_highMI", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32")),
-      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
+      TestConfig("00_baseline", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List())
+//      TestConfig("01_highMI", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
+//      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
     )
 
     val results = commitsWithId map { testConfig =>
@@ -52,7 +56,6 @@ object ProfileMain {
     }
 
     def heading(title: String) {
-//      println(f"$title\n\n${"RunName"}%25s\t${"AllWallMS"}%25s\t${"JVMWallMS"}%25s\t${"JVMUserMS"}%25s\t${"JVMcpuMs"}%25s\t${"AllocatedAll"}%25s\t${"AllocatedJVM"}%25s")
       println(f"$title\n\n${"RunName"}%25s\t${"AllWallMS"}%25s\t${"CPU_MS"}%25s\t${"Allocated"}%25s")
     }
 
@@ -61,43 +64,58 @@ object ProfileMain {
       printAggResults(config, configResult.all)
     }
 
-//    heading("after 10 90%")
-//    results.foreach { case (config, configResult) =>
-//      printAggResults(config, configResult.filterIteration(10, 10000).std)
-//    }
-//
-//    heading("after 10 90% JVM, no GC")
-//    results.foreach { case (config, configResult) =>
-//      printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
-//    }
+    if(envConfig.iterations > 10) {
+      heading("after 10 90%")
+      results.foreach { case (config, configResult) =>
+        printAggResults(config, configResult.filterIteration(10, 10000).std)
+      }
+
+      heading("after 10 90% JVM, no GC")
+      results.foreach { case (config, configResult) =>
+        printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
+      }
+    }
 
   }
 
   private val lastBuiltScalac = mutable.Map[Path, String]()
+
   def executeRuns(envConfig: EnvironmentConfig, testConfig: TestConfig, repeat: Int): RunResult = {
-    val (dir, reused) = testConfig match {
-      case TestConfig(id, BuildFromGit(sha,customDir), _, _) =>
-        val dir = customDir.getOrElse(envConfig.checkoutDir)
-        val reused = lastBuiltScalac.get(dir).contains(sha)
-        lastBuiltScalac(dir) = sha
-        (dir, reused)
-      case TestConfig(_, BuildFromDir(dir), _, _) =>
-    (dir, lastBuiltScalac.contains(dir))
+    val (dir: Path, reused) = testConfig match {
+      case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
+        val targetDir = customDir.getOrElse(envConfig.checkoutDir)
+        val reused = lastBuiltScalac.get(targetDir).contains(sha)
+        lastBuiltScalac(targetDir) = sha
+        (targetDir, reused)
+      case TestConfig(_, BuildFromDir(buildDir, _), _, _) =>
+        (buildDir, lastBuiltScalac.contains(buildDir))
 
     }
-    val action = if (reused) "REUSED" else "building"
+    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
+
+    val exists = Files.exists(profileOutputFile.toNIO)
+
+    val runTest = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
+    val runScalac = !envConfig.analyseOnly && runTest && !reused
+    val action = {
+      if (runTest && runScalac) "compile and test"
+      else if (runTest) "test"
+      else "skip"
+    }
+
     println("\n\n******************************************************************************************************")
     println(s"EXECUTING RUN ${testConfig.id} - ${testConfig.buildDefn}      $action")
     println("******************************************************************************************************\n\n")
 
-    if (!reused) rebuildScalaC(testConfig.buildDefn, dir)
-    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
-
-//    executeTest(envConfig, testConfig, profileOutputFile, repeat)
+    if (runTest) {
+      if (!reused)
+        buildScalaC(testConfig.buildDefn, dir)
+      executeTest(envConfig, testConfig, profileOutputFile, repeat)
+    }
     ResultReader.readResults(testConfig, profileOutputFile, repeat)
   }
 
-  def rebuildScalaC(buildDefn:BuildType, dir: Path): Unit = {
+  def buildScalaC(buildDefn:BuildType, dir: Path): Unit = {
     buildDefn match {
       case BuildFromGit(hash, _) =>
         %%("git", "fetch")(dir)
@@ -109,7 +127,10 @@ object ProfileMain {
   }
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile:Path, repeats: Int): Unit = {
-    val mkPackPath = envConfig.checkoutDir / "build" / "pack"
+    val mkPackPath = testConfig.buildDefn match {
+      case BuildFromDir(dir,_) => dir / "build" / "pack"
+      case BuildFromGit(_,_) => envConfig.checkoutDir / "build" / "pack"
+    }
     println("Logging stats to " + profileOutputFile)
     if (Files.exists(profileOutputFile.toNIO))
       Files.delete(profileOutputFile.toNIO)
@@ -118,7 +139,12 @@ object ProfileMain {
     val args = List(s"++2.12.1=$mkPackPath", //"-debug",
       s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""") ++
       List.fill(repeats)(List("clean", "akka-actor/compile")).flatten
-    runSbt(args, envConfig.testDir, testConfig.extraJVMArgs)
+
+
+    val debugArgs=if (envConfig.runWithDebug)
+      "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil else Nil
+
+    runSbt(args, envConfig.testDir, debugArgs ::: testConfig.extraJVMArgs)
   }
 
 
