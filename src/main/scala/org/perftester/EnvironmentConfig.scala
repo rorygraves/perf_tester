@@ -3,9 +3,9 @@ package org.perftester
 import ammonite.ops.Path
 
 case class EnvironmentConfig(
-  checkoutDir: Path = Path("/xxx"),
-  testDir: Path= Path("/xxx"),
-  outputDir: Path= Path("/xxx"),
+  checkoutDir: Path = Path.home,
+  testDir: Path= Path.home,
+  outputDir: Path= Path.home,
   iterations: Int = 50,
   analyseOnly: Boolean = false,
   runWithDebug: Boolean = false,
