@@ -40,21 +40,19 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val overwriteResults = false
-    val runWithDebug = envConfig.runWithDebug
-
-
     val commitsWithId = List(
 
       // 2.12.1 vs latest
-      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3"),extraJVMArgs = List()),
-      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List())
+//      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3"),extraJVMArgs = List()),
+//      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List()),
 
 //      TestConfig("00_baseline", BuildFromGit("875e5cf312ce3f1246367db822717067f94f97aa"),extraJVMArgs = List()),
 //      TestConfig("00_cache", BuildFromGit("3411f80e39befd824b66636075aab6d6a86f8337"),extraJVMArgs = List())
 
      // TestConfig("01_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
 //      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
+//      TestConfig("00_linker_bl", BuildFromDir("S:/scala/scala_perf2", false),extraJVMArgs = List("")),
+      TestConfig("00_linker", BuildFromDir("S:/scala/scala_perf", false),extraJVMArgs = List(""))
     )
 
     val results = commitsWithId map { testConfig =>
@@ -94,9 +92,31 @@ object ProfileMain {
         val reused = lastBuiltScalac.get(targetDir).contains(sha)
         lastBuiltScalac(targetDir) = sha
         (targetDir, reused)
-      case TestConfig(_, BuildFromDir(buildDir, _), _, _) =>
-        (buildDir, lastBuiltScalac.contains(buildDir))
+      case TestConfig(_, BuildFromDir(sourceDir, _, rebuild), _, _) =>
+        val reuse = {
+          if (lastBuiltScalac.contains(sourceDir)) {
+            println (s"dir reused - already used")
+            true
+          } else {
+            val targetBuild = buildDir(sourceDir)
+            if (!Files.exists(targetBuild.toNIO)) {
+              println (s"dir NOT reused - no build dir")
+              false
+            } else if (rebuild) {
+              println (s"dir NOT reused - as rebuild requested")
+              false
+            } else {
+              val sourceDT = Utils.lastChangedDate(sourceDir / "src")
+              val buildDT = Utils.lastChangedDate(targetBuild)
+              println (s"latest file times \nsource $sourceDT\nbuild  $buildDT")
+              val reuse = sourceDT._1.isBefore(buildDT._1)
+                println (s"dir reused = $reuse - based on file times")
+              reuse
+            }
+          }
+        }
 
+        (sourceDir, reuse)
     }
     val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
 
@@ -132,11 +152,12 @@ object ProfileMain {
     }
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
   }
+  def buildDir(path :Path) = path  / "build" / "pack"
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile:Path, repeats: Int): Unit = {
     val mkPackPath = testConfig.buildDefn match {
-      case BuildFromDir(dir,_) => dir / "build" / "pack"
-      case BuildFromGit(_,_) => envConfig.checkoutDir / "build" / "pack"
+      case BuildFromDir(dir,_, _) => buildDir(dir)
+      case BuildFromGit(_,_) => buildDir(envConfig.checkoutDir)
     }
     println("Logging stats to " + profileOutputFile)
     if (Files.exists(profileOutputFile.toNIO))
