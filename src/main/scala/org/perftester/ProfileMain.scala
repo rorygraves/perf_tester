@@ -45,8 +45,15 @@ object ProfileMain {
 
 
     val commitsWithId = List(
-      TestConfig("00_baseline", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List())
-//      TestConfig("01_highMI", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
+
+      // 2.12.1 vs latest
+      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3"),extraJVMArgs = List()),
+      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List())
+
+//      TestConfig("00_baseline", BuildFromGit("875e5cf312ce3f1246367db822717067f94f97aa"),extraJVMArgs = List()),
+//      TestConfig("00_cache", BuildFromGit("3411f80e39befd824b66636075aab6d6a86f8337"),extraJVMArgs = List())
+
+     // TestConfig("01_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
 //      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
     )
 
