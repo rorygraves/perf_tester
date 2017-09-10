@@ -43,16 +43,9 @@ object ProfileMain {
     val commitsWithId = List(
 
       // 2.12.1 vs latest
-//      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3")),
-//      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9")),
+      TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f"),extraJVMArgs = List()),
+      TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"),extraJVMArgs = List())
 
-//      TestConfig("00_baseline", BuildFromGit("875e5cf312ce3f1246367db822717067f94f97aa")),
-//      TestConfig("00_cache", BuildFromGit("3411f80e39befd824b66636075aab6d6a86f8337"))
-
-     // TestConfig("01_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
-//      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
-//      TestConfig("00_linker_bl", BuildFromDir("S:/scala/scala_perf2", false)),
-      TestConfig("00_linker", BuildFromDir("S:/scala/scala_perf2", false))
     )
 
     val results = commitsWithId map { testConfig =>
@@ -147,7 +140,7 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         %%("git", "fetch")(dir)
         %%("git", "reset", "--hard", hash)(dir)
-        %%("git", "cherry-pick", "e929236a4b419412fda44639bbe06313fc7c05bb")(dir) //profiler
+//        %%("git", "cherry-pick", "e929236a4b419412fda44639bbe06313fc7c05bb")(dir) //profiler
       case _ =>
     }
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
