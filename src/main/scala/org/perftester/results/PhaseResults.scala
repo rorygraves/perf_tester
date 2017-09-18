@@ -22,6 +22,7 @@ case class PhaseResults private (iterationId: Int, phaseId: Int,
 
 
 object PhaseResults {
+  val empty = PhaseResults(-1,-1,"empty", null,-1, "empty", 0,0,0,0,0,0,0)
 
   def combine(results: Seq[PhaseResults], fn: (Double, Double) => Double): PhaseResults = {
     results reduce {

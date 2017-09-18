@@ -31,7 +31,8 @@ object ProfileMain {
     val allWallMsStr = allWallClockTimeAvg.formatted(6,2)
     val allCpuMsStr = allCpuTimeAvg.formatted(6,2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6,2)
-    println("%25s\t%25s\t%25s\t%25s".format(testConfig.id, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
+    val size = results.size.toInt
+    println("%25s\t%4s\t%25s\t%25s\t%25s".format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
 
   }
 
@@ -43,16 +44,24 @@ object ProfileMain {
     val commitsWithId = List(
 
       // 2.12.1 vs latest
-//      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3"),extraJVMArgs = List()),
-//      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List()),
+      //      TestConfig("00_baseline", BuildFromGit("2787b47396013a44072fa7321482103b66fbccd3"),extraJVMArgs = List()),
+      //      TestConfig("00_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List()),
 
-//      TestConfig("00_baseline", BuildFromGit("875e5cf312ce3f1246367db822717067f94f97aa"),extraJVMArgs = List()),
-//      TestConfig("00_cache", BuildFromGit("3411f80e39befd824b66636075aab6d6a86f8337"),extraJVMArgs = List())
+      //      TestConfig("00_baseline", BuildFromGit("875e5cf312ce3f1246367db822717067f94f97aa"),extraJVMArgs = List()),
+      //      TestConfig("00_cache", BuildFromGit("3411f80e39befd824b66636075aab6d6a86f8337"),extraJVMArgs = List())
 
-     // TestConfig("01_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
-//      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
-//      TestConfig("00_linker_bl", BuildFromDir("S:/scala/scala_perf2", false),extraJVMArgs = List("")),
-      TestConfig("00_linker", BuildFromDir("S:/scala/scala_perf", false),extraJVMArgs = List(""))
+      // TestConfig("01_cache", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=18"))
+      //      TestConfig("01_highMIandIS", BuildFromGit("5a5ed5826f297bca6291cd1b1effd3f7231215f9"),extraJVMArgs = List("-XX:MaxInlineLevel=32","-XX:MaxInlineSize=70"))
+//      TestConfig("00_baseline", BuildFromDir("S:/scala/quick", false), extraArgs = List()),
+//      TestConfig("00_no-forwaders", BuildFromDir("S:/scala/quick", false), extraArgs = List("-Xno-forwarders", "true"))
+      TestConfig("00_backend-baseline", BuildFromDir("S:/scala/backend-before", false), extraArgs = List()),
+      TestConfig("00_backend", BuildFromDir("S:/scala/backend", false), extraArgs = List("-Yparallel-write=3"))
+//      TestConfig("00_linker_namer", BuildFromDir("S:/scala/scala_perf", true), extraArgs = List("-Yprofile-external-tool:namer"))
+//        TestConfig("00_linker_namer", BuildFromDir("S:/scala/scala_perf", false), extraArgs = List()),
+//      TestConfig("00_linker_cp", BuildFromDir("S:/scala/scala_perf", false), extraArgs = List("-Yclasspath-cache-enabled", "-Yclasspath-top-prefetch")),
+//      TestConfig("00_linker_cp_raw2", BuildFromDir("S:/scala/scala_perf", false), extraArgs = List("-Yclasspath-cache-enabled", "-Yclasspath-top-prefetch", "-Yclasspath-raw-jar", "-Yclasspath-raw-dir")
+//      TestConfig("00_cp-noargs", BuildFromGit("bb05d48dcc2f6613e382704af35324bc3c775549")),
+//      TestConfig("00_cpargs", BuildFromGit("bb05d48dcc2f6613e382704af35324bc3c775549"), extraArgs = List("-Yclasspath-cache-enabled", "-Yclasspath-top-prefetch", "-Yclasspath-raw-jar", "-Yclasspath-raw-dir"))
     )
 
     val results = commitsWithId map { testConfig =>
@@ -69,15 +78,33 @@ object ProfileMain {
       printAggResults(config, configResult.all)
     }
 
-    if(envConfig.iterations > 10) {
+    if (envConfig.iterations > 10) {
       heading("after 10 90%")
       results.foreach { case (config, configResult) =>
         printAggResults(config, configResult.filterIteration(10, 10000).std)
       }
 
-      heading("after 10 90% JVM, no GC")
+      val phases: mutable.LinkedHashSet[String] = results.flatMap(r => r._2.phases)(scala.collection.breakOut)
+
+      for (phase <- phases) {
+        heading(s"after 10 90%, phase $phase, no GC")
+        for {(config, configResult) <- results} {
+          printAggResults(config, configResult.filterIteration(10, 10000).filterPhases(phase).filterNoGc.std)
+        }
+      }
+    }
+    if (envConfig.iterations > 20) {
+      heading("after 20 90%")
       results.foreach { case (config, configResult) =>
-        printAggResults(config, configResult.filterIteration(10, 10000).filterPhases("jvm").filterNoGc.std)
+        printAggResults(config, configResult.filterIteration(20, 10000).std)
+      }
+
+      val phases: mutable.LinkedHashSet[String] = results.flatMap(r => r._2.phases)(scala.collection.breakOut)
+      for (phase <- phases) {
+        heading(s"after 20 90%, phase $phase, no GC")
+        for {(config, configResult) <- results} {
+          printAggResults(config, configResult.filterIteration(20, 10000).filterPhases(phase).filterNoGc.std)
+        }
       }
     }
 
@@ -147,7 +174,7 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         %%("git", "fetch")(dir)
         %%("git", "reset", "--hard", hash)(dir)
-        %%("git", "cherry-pick", "e929236a4b419412fda44639bbe06313fc7c05bb")(dir) //profiler
+//        %%("git", "cherry-pick", "e929236a4b419412fda44639bbe06313fc7c05bb")(dir) //profiler
       case _ =>
     }
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)

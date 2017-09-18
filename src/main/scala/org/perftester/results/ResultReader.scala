@@ -7,11 +7,14 @@ import scala.collection.SortedSet
 
 object ResultReader {
   private val totalOrSingle = Set(ResultType.SINGLE.toString,ResultType.TOTAL.toString)
+  private val total= Set(ResultType.TOTAL.toString)
+  private val single = Set(ResultType.SINGLE.toString)
   def readResults(testConfig: TestConfig, file : Path, iterations:Int): RunResult = {
     val lines = read.lines! file
     val asValues = lines.map(_.split(',').toList)
     val dataLines = asValues.filter( value =>
-      value(0) == "data" && totalOrSingle(value(4)) )
+      value(0) == "data" && total(value(4)) )
+ //     value(0) == "data" && value(4) ==  ResultType.SINGLE)
     val rows = dataLines.map { row =>
       PhaseResults(
         // data,
