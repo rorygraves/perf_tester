@@ -8,9 +8,9 @@ import scala.collection.SortedSet
 
 case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterations: SortedSet[Int], phases: Set[String]) {
 
-  rawData foreach { r => require(iterations(r.iterationId)) }
+ // rawData foreach { r => require(iterations(r.iterationId), s" no iteration ${r.iterationId} in $testConfig") }
 
-  rawData foreach { r => require(phases(r.phaseName)) }
+  rawData foreach { r => require(phases(r.phaseName), r.phaseName) }
 
   def filterIteration(min: Int, max: Int): RunResult = {
     val filter = (min to max).toSet
@@ -30,17 +30,20 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
   )
 
   class Aggregate(val grouped: Seq[PhaseResults]) {
-    val totals: PhaseResults = PhaseResults.combine(grouped, _ + _)
-    val min: PhaseResults = PhaseResults.combine(grouped, Math.min)
-    val max: PhaseResults = PhaseResults.combine(grouped, Math.max)
-    val mean: PhaseResults = PhaseResults.transform(totals, _ / grouped.size)
+    def handleEmpty( fn : => PhaseResults): PhaseResults = {
+      if (grouped.isEmpty) PhaseResults.empty else fn
+    }
+    val totals: PhaseResults = handleEmpty(PhaseResults.combine(grouped, _ + _))
+    val min: PhaseResults = handleEmpty(PhaseResults.combine(grouped, Math.min))
+    val max: PhaseResults = handleEmpty(PhaseResults.combine(grouped, Math.max))
+    val mean: PhaseResults = handleEmpty(PhaseResults.transform(totals, _ / grouped.size))
   }
 
   class Distribution(results: Array[Double]) {
-    val min: Double = results.min
-    val max: Double = results.max
+    val min: Double = if (results.isEmpty) -1 else results.min
+    val max: Double = if (results.isEmpty) -1 else results.max
 
-    val mean = results.sum / size
+    val mean = if (results.isEmpty) -1 else results.sum / size
 
     def size = results.length
 
@@ -48,13 +51,13 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
 
     def iqr = at(.75) - at(.25)
 
-    def at(pos: Double) = {
+    def at(pos: Double) = if (results.isEmpty) -1 else {
       assert(pos >= 0.0)
       assert(pos <= 1.0)
       val index = ((size - 1) * pos).toInt
       results(index)
     }
-    def atPC(pos:Double) = {
+    def atPC(pos:Double) = if (results.isEmpty) -1 else {
       val value = at(pos)
       ((value / mean) -1) *100
     }
@@ -103,6 +106,7 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
     lazy val allWallClockMS = Distribution.range(lower, upper, totals, _.wallClockTimeMS)
     lazy val allAllocated = Distribution.range(lower, upper, totals, _.allocatedMB)
     lazy val allCPUTime = Distribution.range(lower, upper, totals, _.cpuTimeMS)
+    def size = rawData.size * (upper-lower)
   }
 
   val all = new Detail(0, 1)
