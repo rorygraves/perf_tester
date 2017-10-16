@@ -3,9 +3,7 @@
  */
 package akka.pattern
 
-import java.time.Instant
-
-import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
@@ -43,8 +41,7 @@ object BackoffSupervisor {
     childName: String,
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
-    randomFactor: Double
-  ): Props = {
+    randomFactor: Double): Props = {
     propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
   }
 
@@ -66,7 +63,8 @@ object BackoffSupervisor {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    * @param strategy the supervision strategy to use for handling exceptions
-   *   in the child
+   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
+   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
   def propsWithSupervisorStrategy(
     childProps: Props,
@@ -74,8 +72,7 @@ object BackoffSupervisor {
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double,
-    strategy: SupervisorStrategy
-  ): Props = {
+    strategy: SupervisorStrategy): Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
@@ -153,8 +150,7 @@ object BackoffSupervisor {
     restartCount: Int,
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
-    randomFactor: Double
-  ): FiniteDuration = {
+    randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
     if (restartCount >= 30) // Duration overflow protection (> 100 years)
       maxBackoff
@@ -178,9 +174,9 @@ final class BackoffSupervisor(
   maxBackoff: FiniteDuration,
   val reset: BackoffReset,
   randomFactor: Double,
-  strategy: SupervisorStrategy
-)
-    extends Actor with HandleBackoff {
+  strategy: SupervisorStrategy,
+  val replyWhileStopped: Option[Any])
+  extends Actor with HandleBackoff {
 
   import BackoffSupervisor._
   import context.dispatcher
@@ -205,9 +201,8 @@ final class BackoffSupervisor(
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double,
-    supervisorStrategy: SupervisorStrategy
-  ) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy)
+    supervisorStrategy: SupervisorStrategy) =
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -215,8 +210,7 @@ final class BackoffSupervisor(
     childName: String,
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
-    randomFactor: Double
-  ) =
+    randomFactor: Double) =
     this(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
 
   def onTerminated: Receive = {
@@ -234,6 +228,7 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   def childProps: Props
   def childName: String
   def reset: BackoffReset
+  def replyWhileStopped: Option[Any]
 
   var child: Option[ActorRef] = None
   var restartCount = 0
@@ -281,7 +276,10 @@ private[akka] trait HandleBackoff { this: Actor ⇒
 
     case msg ⇒ child match {
       case Some(c) ⇒ c.forward(msg)
-      case None ⇒ context.system.deadLetters.forward(msg)
+      case None ⇒ replyWhileStopped match {
+        case Some(r) ⇒ sender ! r
+        case None ⇒ context.system.deadLetters.forward(msg)
+      }
     }
   }
 }

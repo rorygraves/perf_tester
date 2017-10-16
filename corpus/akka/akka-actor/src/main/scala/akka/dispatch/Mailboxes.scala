@@ -23,11 +23,10 @@ object Mailboxes {
 }
 
 private[akka] class Mailboxes(
-    val settings: ActorSystem.Settings,
-    val eventStream: EventStream,
-    dynamicAccess: DynamicAccess,
-    deadLetters: ActorRef
-) {
+  val settings: ActorSystem.Settings,
+  val eventStream: EventStream,
+  dynamicAccess: DynamicAccess,
+  deadLetters: ActorRef) {
 
   import Mailboxes._
 
@@ -104,8 +103,7 @@ private[akka] class Mailboxes(
         t.getActualTypeArguments.head match {
           case c: Class[_] ⇒ c
           case x ⇒ throw new IllegalArgumentException(
-            s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])"
-          )
+            s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
         }
     }
   }
@@ -139,13 +137,11 @@ private[akka] class Mailboxes(
       if (hasMailboxRequirement && !mailboxRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
           s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [$id]. " +
-            s"Must be a subclass of [$mailboxRequirement]."
-        )
+            s"Must be a subclass of [$mailboxRequirement].")
       if (hasRequiredType(actorClass) && !actorRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
           s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]. " +
-            s"Must be a subclass of [$actorRequirement]."
-        )
+            s"Must be a subclass of [$actorRequirement].")
       mailboxType
     }
 
@@ -197,8 +193,7 @@ private[akka] class Mailboxes(
                     throw new IllegalArgumentException(
                       s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
                         " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters",
-                      exception
-                    )
+                      exception)
                 }).get
             }
 

@@ -40,9 +40,8 @@ private[akka] class RoutedActorCell(
   _routerProps: Props,
   _routerDispatcher: MessageDispatcher,
   val routeeProps: Props,
-  _supervisor: InternalActorRef
-)
-    extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
+  _supervisor: InternalActorRef)
+  extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
 
   private[akka] val routerConfig = _routerProps.routerConfig
 
@@ -149,11 +148,9 @@ private[akka] class RouterActor extends Actor {
   }
 
   val routingLogicController: Option[ActorRef] = cell.routerConfig.routingLogicController(
-    cell.router.logic
-  ).map(props ⇒ context.actorOf(
-    props.withDispatcher(context.props.dispatcher),
-    name = "routingLogicController"
-  ))
+    cell.router.logic).map(props ⇒ context.actorOf(
+      props.withDispatcher(context.props.dispatcher),
+      name = "routingLogicController"))
 
   def receive = {
     case GetRoutees ⇒

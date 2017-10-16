@@ -112,8 +112,7 @@ trait ActorRefProvider {
     systemService: Boolean,
     deploy: Option[Deploy],
     lookupDeploy: Boolean,
-    async: Boolean
-  ): InternalActorRef
+    async: Boolean): InternalActorRef
 
   /**
    * INTERNAL API
@@ -393,7 +392,7 @@ private[akka] object LocalActorRefProvider {
    * Root and user guardian
    */
   private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor
-      with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
       case Terminated(_) ⇒ context.stop(self)
@@ -408,7 +407,7 @@ private[akka] object LocalActorRefProvider {
    * System guardian
    */
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
-      extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     import SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
@@ -466,25 +465,22 @@ private[akka] class LocalActorRefProvider private[akka] (
   val eventStream: EventStream,
   val dynamicAccess: DynamicAccess,
   override val deployer: Deployer,
-  _deadLetters: Option[ActorPath ⇒ InternalActorRef]
-)
-    extends ActorRefProvider {
+  _deadLetters: Option[ActorPath ⇒ InternalActorRef])
+  extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
   def this(
     _systemName: String,
     settings: ActorSystem.Settings,
     eventStream: EventStream,
-    dynamicAccess: DynamicAccess
-  ) =
+    dynamicAccess: DynamicAccess) =
     this(
       _systemName,
       settings,
       eventStream,
       dynamicAccess,
       new Deployer(settings, dynamicAccess),
-      None
-    )
+      None)
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
@@ -601,8 +597,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       defaultDispatcher,
       defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
-      rootPath
-    ) {
+      rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp" ⇒ tempContainer
@@ -630,8 +625,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     cell.reserveChild("system")
     val ref = new LocalActorRef(
       system, Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "system"
-    )
+      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "system")
     cell.initChild(ref)
     ref.start()
     ref
@@ -756,8 +750,7 @@ private[akka] class LocalActorRefProvider private[akka] (
           else new LocalActorRef(system, props2, dispatcher, mailboxType, supervisor, path)
         } catch {
           case NonFatal(e) ⇒ throw new ConfigurationException(
-            s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]", e
-          )
+            s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]", e)
         }
 
       case router ⇒
@@ -772,8 +765,7 @@ private[akka] class LocalActorRefProvider private[akka] (
 
         val routerProps = Props(
           p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
-          classOf[RoutedActorCell.RouterActorCreator], Vector(p.routerConfig)
-        )
+          classOf[RoutedActorCell.RouterActorCreator], Vector(p.routerConfig))
         val routeeProps = p.withRouter(NoRouter)
 
         try {
@@ -789,8 +781,7 @@ private[akka] class LocalActorRefProvider private[akka] (
         } catch {
           case NonFatal(e) ⇒ throw new ConfigurationException(
             s"configuration problem while creating [$path] with router dispatcher [${routerProps.dispatcher}] and mailbox [${routerProps.mailbox}] " +
-              s"and routee dispatcher [${routeeProps.dispatcher}] and mailbox [${routeeProps.mailbox}]", e
-          )
+              s"and routee dispatcher [${routeeProps.dispatcher}] and mailbox [${routeeProps.mailbox}]", e)
         }
     }
   }

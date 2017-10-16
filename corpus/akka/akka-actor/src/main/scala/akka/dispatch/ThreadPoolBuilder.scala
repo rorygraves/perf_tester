@@ -7,7 +7,7 @@ package akka.dispatch
 import java.util.Collection
 import scala.concurrent.{ BlockContext, CanAwait }
 import scala.concurrent.duration.Duration
-import scala.concurrent.forkjoin._
+import akka.dispatch.forkjoin._
 import java.util.concurrent.{
   ArrayBlockingQueue,
   BlockingQueue,
@@ -71,9 +71,8 @@ final case class ThreadPoolConfig(
   maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
   threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
   queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
-  rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy
-)
-    extends ExecutorServiceFactoryProvider {
+  rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy)
+  extends ExecutorServiceFactoryProvider {
   class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
       val service: ThreadPoolExecutor = new ThreadPoolExecutor(
@@ -83,8 +82,7 @@ final case class ThreadPoolConfig(
         threadTimeout.unit,
         queueFactory(),
         threadFactory,
-        rejectionPolicy
-      ) with LoadMetrics {
+        rejectionPolicy) with LoadMetrics {
         def atFullThrottle(): Boolean = this.getActiveCount >= this.getPoolSize
       }
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
@@ -181,9 +179,8 @@ final case class MonitorableThreadFactory(
   daemonic: Boolean,
   contextClassLoader: Option[ClassLoader],
   exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing,
-  protected val counter: AtomicLong = new AtomicLong
-)
-    extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
+  protected val counter: AtomicLong = new AtomicLong)
+  extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
 
   def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
     val t = wire(new MonitorableThreadFactory.AkkaForkJoinWorkerThread(pool))

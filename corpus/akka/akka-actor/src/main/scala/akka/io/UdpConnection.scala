@@ -22,9 +22,8 @@ private[io] class UdpConnection(
   udpConn: UdpConnectedExt,
   channelRegistry: ChannelRegistry,
   commander: ActorRef,
-  connect: Connect
-)
-    extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+  connect: Connect)
+  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import connect._
   import udpConn._
@@ -157,8 +156,7 @@ private[io] class UdpConnection(
       case NonFatal(e) ⇒
         log.debug(
           "Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
-          remoteAddress, localAddress.getOrElse("undefined"), e
-        )
+          remoteAddress, localAddress.getOrElse("undefined"), e)
         commander ! CommandFailed(connect)
         context.stop(self)
     }

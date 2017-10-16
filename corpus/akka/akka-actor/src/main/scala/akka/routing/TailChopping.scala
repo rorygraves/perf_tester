@@ -45,7 +45,7 @@ import scala.util.Random
  */
 @SerialVersionUID(1L)
 final case class TailChoppingRoutingLogic(scheduler: Scheduler, within: FiniteDuration,
-    interval: FiniteDuration, context: ExecutionContext) extends RoutingLogic {
+  interval: FiniteDuration, context: ExecutionContext) extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee = {
     if (routees.isEmpty) NoRoutee
     else TailChoppingRoutees(scheduler, routees, within, interval)(context)
@@ -57,9 +57,8 @@ final case class TailChoppingRoutingLogic(scheduler: Scheduler, within: FiniteDu
  */
 @SerialVersionUID(1L)
 private[akka] final case class TailChoppingRoutees(
-    scheduler: Scheduler, routees: immutable.IndexedSeq[Routee],
-    within: FiniteDuration, interval: FiniteDuration
-)(implicit ec: ExecutionContext) extends Routee {
+  scheduler: Scheduler, routees: immutable.IndexedSeq[Routee],
+  within: FiniteDuration, interval: FiniteDuration)(implicit ec: ExecutionContext) extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit = {
     implicit val timeout = Timeout(within)
@@ -83,8 +82,7 @@ private[akka] final case class TailChoppingRoutees(
     }
 
     val sendTimeout = scheduler.scheduleOnce(within)(promise.tryFailure(
-      new AskTimeoutException(s"Ask timed out on [$sender] after [$within.toMillis} ms]")
-    ))
+      new AskTimeoutException(s"Ask timed out on [$sender] after [$within.toMillis} ms]")))
 
     val f = promise.future
     f.onComplete {
@@ -148,9 +146,8 @@ final case class TailChoppingPool(
   interval: FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false
-)
-    extends Pool with PoolOverrideUnsetConfig[TailChoppingPool] {
+  override val usePoolDispatcher: Boolean = false)
+  extends Pool with PoolOverrideUnsetConfig[TailChoppingPool] {
 
   def this(config: Config) =
     this(
@@ -158,8 +155,7 @@ final case class TailChoppingPool(
       within = config.getMillisDuration("within"),
       interval = config.getMillisDuration("tail-chopping-router.interval"),
       resizer = Resizer.fromConfig(config),
-      usePoolDispatcher = config.hasPath("pool-dispatcher")
-    )
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -231,18 +227,16 @@ final case class TailChoppingPool(
  *   router management messages
  */
 final case class TailChoppingGroup(
-    val paths: immutable.Iterable[String],
-    within: FiniteDuration,
-    interval: FiniteDuration,
-    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId
-) extends Group {
+  val paths: immutable.Iterable[String],
+  within: FiniteDuration,
+  interval: FiniteDuration,
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends Group {
 
   def this(config: Config) =
     this(
       paths = immutableSeq(config.getStringList("routees.paths")),
       within = config.getMillisDuration("within"),
-      interval = config.getMillisDuration("tail-chopping-router.interval")
-    )
+      interval = config.getMillisDuration("tail-chopping-router.interval"))
 
   /**
    * Java API

@@ -88,8 +88,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
     handler: ActorRef,
     remoteAddress: InetSocketAddress,
     localAddress: Option[InetSocketAddress] = None,
-    options: immutable.Traversable[SocketOption] = Nil
-  ) extends Command
+    options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the
@@ -153,8 +152,7 @@ class UdpConnectedExt(system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(classOf[UdpConnectedManager], this).withDeploy(Deploy.local),
-      name = "IO-UDP-CONN"
-    )
+      name = "IO-UDP-CONN")
   }
 
   /**
@@ -183,23 +181,20 @@ object UdpConnectedMessage {
     handler: ActorRef,
     remoteAddress: InetSocketAddress,
     localAddress: InetSocketAddress,
-    options: JIterable[SocketOption]
-  ): Command = Connect(handler, remoteAddress, Some(localAddress), options)
+    options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
   /**
    * Connect without specifying the `localAddress`.
    */
   def connect(
     handler: ActorRef,
     remoteAddress: InetSocketAddress,
-    options: JIterable[SocketOption]
-  ): Command = Connect(handler, remoteAddress, None, options)
+    options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, None, options)
   /**
    * Connect without specifying the `localAddress` or `options`.
    */
   def connect(
     handler: ActorRef,
-    remoteAddress: InetSocketAddress
-  ): Command = Connect(handler, remoteAddress, None, Nil)
+    remoteAddress: InetSocketAddress): Command = Connect(handler, remoteAddress, None, Nil)
 
   /**
    * This message is understood by the connection actors to send data to their

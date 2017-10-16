@@ -95,8 +95,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
   final case class Bind(
     handler: ActorRef,
     localAddress: InetSocketAddress,
-    options: immutable.Traversable[SocketOption] = Nil
-  ) extends Command
+    options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to the listener actor that previously sent a [[Bound]]
@@ -216,8 +215,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(classOf[UdpManager], this).withDeploy(Deploy.local),
-      name = "IO-UDP-FF"
-    )
+      name = "IO-UDP-FF")
   }
 
   /**

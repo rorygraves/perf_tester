@@ -159,8 +159,7 @@ private[akka] trait StashSupport {
       throw new IllegalStateException(s"Can't stash the same message $currMsg more than once")
     if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
     else throw new StashOverflowException(
-      s"Couldn't enqueue message ${currMsg.message.getClass.getName} from ${currMsg.sender} to stash of $self"
-    )
+      s"Couldn't enqueue message ${currMsg.message.getClass.getName} from ${currMsg.sender} to stash of $self")
   }
 
   /**

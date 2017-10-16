@@ -31,7 +31,7 @@ private[akka] case object ChildNameReserved extends ChildStats
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
 final case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
-    extends ChildStats {
+  extends ChildStats {
 
   def uid: Int = child.path.uid
 
@@ -386,9 +386,8 @@ abstract class SupervisorStrategy {
 case class AllForOneStrategy(
   maxNrOfRetries: Int = -1,
   withinTimeRange: Duration = Duration.Inf,
-  override val loggingEnabled: Boolean = true
-)(val decider: SupervisorStrategy.Decider)
-    extends SupervisorStrategy {
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+  extends SupervisorStrategy {
 
   import SupervisorStrategy._
 
@@ -462,9 +461,8 @@ case class AllForOneStrategy(
 case class OneForOneStrategy(
   maxNrOfRetries: Int = -1,
   withinTimeRange: Duration = Duration.Inf,
-  override val loggingEnabled: Boolean = true
-)(val decider: SupervisorStrategy.Decider)
-    extends SupervisorStrategy {
+  override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+  extends SupervisorStrategy {
 
   /**
    * Java API
@@ -506,8 +504,7 @@ case class OneForOneStrategy(
    */
   private val retriesWindow = (
     SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
-    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt)
-  )
+    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = ()
 

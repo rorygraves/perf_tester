@@ -9,6 +9,7 @@ import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import akka.annotation.InternalApi
 
 object FSM {
 
@@ -87,9 +88,10 @@ object FSM {
   /**
    * INTERNAL API
    */
-  // FIXME: what about the cancellable?
-  private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
-      extends NoSerializationVerificationNeeded {
+  @InternalApi
+  private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int,
+    owner: AnyRef)(context: ActorContext)
+    extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
@@ -97,8 +99,7 @@ object FSM {
     def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
       ref = Some(
         if (repeat) scheduler.schedule(timeout, timeout, actor, this)
-        else scheduler.scheduleOnce(timeout, actor, this)
-      )
+        else scheduler.scheduleOnce(timeout, actor, this))
 
     def cancel(): Unit =
       if (ref.isDefined) {
@@ -129,7 +130,7 @@ object FSM {
    * Using a subclass for binary compatibility reasons
    */
   private[akka] class SilentState[S, D](_stateName: S, _stateData: D, _timeout: Option[FiniteDuration], _stopReason: Option[Reason], _replies: List[Any])
-      extends State[S, D](_stateName, _stateData, _timeout, _stopReason, _replies) {
+    extends State[S, D](_stateName, _stateData, _timeout, _stopReason, _replies) {
 
     /**
      * INTERNAL API
@@ -420,7 +421,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat, timerGen.next)(context)
+    val timer = Timer(name, msg, repeat, timerGen.next, this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -617,8 +618,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
       }
-    case t @ Timer(name, msg, repeat, gen) ⇒
-      if ((timers contains name) && (timers(name).generation == gen)) {
+    case t @ Timer(name, msg, repeat, gen, owner) ⇒
+      if ((owner eq this) && (timers contains name) && (timers(name).generation == gen)) {
         if (timeoutFuture.isDefined) {
           timeoutFuture.get.cancel()
           timeoutFuture = None
@@ -783,7 +784,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
     if (debugEvent) {
       val srcstr = source match {
         case s: String ⇒ s
-        case Timer(name, _, _, _) ⇒ "timer " + name
+        case Timer(name, _, _, _, _) ⇒ "timer " + name
         case a: ActorRef ⇒ a.toString
         case _ ⇒ "unknown"
       }

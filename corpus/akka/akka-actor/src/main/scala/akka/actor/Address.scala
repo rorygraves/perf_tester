@@ -140,8 +140,7 @@ object AddressFromURIString {
       if (uri.getHost == null || uri.getPort == -1) None
       else Some(
         if (uri.getUserInfo == null) Address(uri.getScheme, uri.getHost)
-        else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort)
-      )
+        else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort))
     }
 
   /**

@@ -12,6 +12,8 @@ import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.Optional
 
+import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *
@@ -112,10 +114,9 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 @SerialVersionUID(1L)
 final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean
-)
-    extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
-    with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
+  @BeanProperty val addressTerminated: Boolean)
+  extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
+  with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
 
 /**
  * INTERNAL API
@@ -182,7 +183,7 @@ final case class InvalidActorNameException(message: String) extends AkkaExceptio
  */
 @SerialVersionUID(1L)
 class ActorInitializationException protected (actor: ActorRef, message: String, cause: Throwable)
-    extends AkkaException(ActorInitializationException.enrichedMessage(actor, message), cause) {
+  extends AkkaException(ActorInitializationException.enrichedMessage(actor, message), cause) {
   def getActor: ActorRef = actor
 }
 object ActorInitializationException {
@@ -212,8 +213,7 @@ final case class PreRestartException private[akka] (actor: ActorRef, cause: Thro
     "exception in preRestart(" +
       (if (originalCause == null) "null" else originalCause.getClass) + ", " +
       (messageOption match { case Some(m: AnyRef) ⇒ m.getClass; case _ ⇒ "None" }) +
-      ")", cause
-  )
+      ")", cause)
 
 /**
  * A PostRestartException is thrown when constructor or postRestart() method
@@ -227,8 +227,7 @@ final case class PreRestartException private[akka] (actor: ActorRef, cause: Thro
 final case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
   extends ActorInitializationException(
     actor,
-    "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")", cause
-  )
+    "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")", cause)
 
 /**
  * This is an extractor for retrieving the original cause (i.e. the first
@@ -275,6 +274,7 @@ class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaExc
  */
 @SerialVersionUID(1L)
 final case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
+  extends NoSerializationVerificationNeeded
 
 /**
  * Classes for passing status back to the sender.
@@ -469,8 +469,7 @@ trait Actor {
     if ((contextStack.isEmpty) || (contextStack.head eq null))
       throw ActorInitializationException(
         s"You cannot create an instance of [${getClass.getName}] explicitly using the constructor (new). " +
-          "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation."
-      )
+          "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation.")
     val c = contextStack.head
     ActorCell.contextStack.set(null :: contextStack)
     c
@@ -512,6 +511,7 @@ trait Actor {
    * @param receive current behavior.
    * @param msg current message.
    */
+  @InternalApi
   protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     // optimization: avoid allocation of lambda
     if (receive.applyOrElse(msg, Actor.notHandledFun).asInstanceOf[AnyRef] eq Actor.NotHandled) {
@@ -520,23 +520,35 @@ trait Actor {
   }
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPreStart(): Unit = preStart()
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `postStop`. Calls `postStop` by default.
    */
+  @InternalApi
   protected[akka] def aroundPostStop(): Unit = postStop()
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `preRestart`. Calls `preRestart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = preRestart(reason, message)
 
   /**
+   * INTERNAL API.
+   *
    * Can be overridden to intercept calls to `postRestart`. Calls `postRestart` by default.
    */
+  @InternalApi
   protected[akka] def aroundPostRestart(reason: Throwable): Unit = postRestart(reason)
 
   /**

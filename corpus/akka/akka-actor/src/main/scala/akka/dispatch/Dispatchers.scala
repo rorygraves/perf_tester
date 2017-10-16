@@ -36,8 +36,7 @@ private[akka] final case class DefaultDispatcherPrerequisites(
   val dynamicAccess: DynamicAccess,
   val settings: ActorSystem.Settings,
   val mailboxes: Mailboxes,
-  val defaultExecutionContext: Option[ExecutionContext]
-) extends DispatcherPrerequisites
+  val defaultExecutionContext: Option[ExecutionContext]) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -188,8 +187,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
               ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
                 "[akka.dispatch.DispatcherPrerequisites] parameters")
-                .format(fqn, cfg.getString("id")), exception
-            )
+                .format(fqn, cfg.getString("id")), exception)
         }).get
     }
   }
@@ -201,7 +199,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
  * of the `dispatcher()` method.
  */
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+  extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val instance = new Dispatcher(
     this,
@@ -209,8 +207,7 @@ class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisi
     config.getInt("throughput"),
     config.getNanosDuration("throughput-deadline-time"),
     configureExecutor(),
-    config.getMillisDuration("shutdown-timeout")
-  )
+    config.getMillisDuration("shutdown-timeout"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -235,7 +232,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * of the `dispatcher()` method.
  */
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
+  extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 
   private val instance = {
     val mailboxes = prerequisites.mailboxes
@@ -244,22 +241,19 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
     if (!classOf[MultipleConsumerSemantics].isAssignableFrom(requirement))
       throw new IllegalArgumentException(
         "BalancingDispatcher must have 'mailbox-requirement' which implements akka.dispatch.MultipleConsumerSemantics; " +
-          s"dispatcher [$id] has [$requirement]"
-      )
+          s"dispatcher [$id] has [$requirement]")
     val mailboxType =
       if (config.hasPath("mailbox")) {
         val mt = mailboxes.lookup(config.getString("mailbox"))
         if (!requirement.isAssignableFrom(mailboxes.getProducedMessageQueueType(mt)))
           throw new IllegalArgumentException(
-            s"BalancingDispatcher [$id] has 'mailbox' [${mt.getClass}] which is incompatible with 'mailbox-requirement' [$requirement]"
-          )
+            s"BalancingDispatcher [$id] has 'mailbox' [${mt.getClass}] which is incompatible with 'mailbox-requirement' [$requirement]")
         mt
       } else if (config.hasPath("mailbox-type")) {
         val mt = mailboxes.lookup(id)
         if (!requirement.isAssignableFrom(mailboxes.getProducedMessageQueueType(mt)))
           throw new IllegalArgumentException(
-            s"BalancingDispatcher [$id] has 'mailbox-type' [${mt.getClass}] which is incompatible with 'mailbox-requirement' [$requirement]"
-          )
+            s"BalancingDispatcher [$id] has 'mailbox-type' [${mt.getClass}] which is incompatible with 'mailbox-requirement' [$requirement]")
         mt
       } else mailboxes.lookupByQueueType(requirement)
     create(mailboxType)
@@ -274,8 +268,7 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
       mailboxType,
       configureExecutor(),
       config.getMillisDuration("shutdown-timeout"),
-      config.getBoolean("attempt-teamwork")
-    )
+      config.getBoolean("attempt-teamwork"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -289,7 +282,7 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
  * of the `dispatcher()` method.
  */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+  extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
     case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
@@ -299,10 +292,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
           "PinnedDispatcherConfigurator",
           this.getClass,
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
-            config.getString("id")
-          )
-        )
-      )
+            config.getString("id"))))
       ThreadPoolConfig()
   }
   /**
@@ -311,7 +301,6 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   override def dispatcher(): MessageDispatcher =
     new PinnedDispatcher(
       this, null, config.getString("id"),
-      config.getMillisDuration("shutdown-timeout"), threadPoolConfig
-    )
+      config.getMillisDuration("shutdown-timeout"), threadPoolConfig)
 
 }

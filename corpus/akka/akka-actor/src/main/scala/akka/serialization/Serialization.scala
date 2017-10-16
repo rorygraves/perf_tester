@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
+import akka.annotation.InternalApi
 
 object Serialization {
 
@@ -122,8 +123,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems."
-        )
+            "akka.actor.serializers is not in synch between the two systems.")
       }
       serializer.fromBinary(bytes, clazz).asInstanceOf[T]
     }
@@ -138,8 +138,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems."
-        )
+            "akka.actor.serializers is not in synch between the two systems.")
       }
       deserializeByteArray(bytes, serializer, manifest)
     }
@@ -168,8 +167,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                   s1.fromBinary(bytes, classManifestOption)
                 case Failure(e) ⇒
                   throw new NotSerializableException(
-                    s"Cannot find manifest class [$manifest] for serializer with id [${serializer.identifier}]."
-                  )
+                    s"Cannot find manifest class [$manifest] for serializer with id [${serializer.identifier}].")
               }
           }
         }
@@ -181,18 +179,18 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * using the optional type hint to the Serializer.
    * Returns either the resulting object or throws an exception if deserialization fails.
    */
+  @throws(classOf[NotSerializableException])
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
     val serializer = try getSerializerById(serializerId) catch {
       case _: NoSuchElementException ⇒ throw new NotSerializableException(
         s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-          "akka.actor.serializers is not in synch between the two systems."
-      )
+          "akka.actor.serializers is not in synch between the two systems.")
     }
     serializer match {
       case ser: ByteBufferSerializer ⇒
         ser.fromBinary(buf, manifest)
       case _ ⇒
-        val bytes = Array.ofDim[Byte](buf.remaining())
+        val bytes = new Array[Byte](buf.remaining())
         buf.get(bytes)
         deserializeByteArray(bytes, serializer, manifest)
     }
@@ -223,6 +221,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    *
    * Throws java.io.NotSerializableException if no `serialization-bindings` is configured for the class.
    */
+  @throws(classOf[NotSerializableException])
   def serializerFor(clazz: Class[_]): Serializer =
     serializerMap.get(clazz) match {
       case null ⇒ // bindings are ordered from most specific to least specific
@@ -366,7 +365,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private val quickSerializerByIdentity: Array[Serializer] = {
     val size = 1024
-    val table = Array.ofDim[Serializer](size)
+    val table = new Array[Serializer](size)
     serializerByIdentity.foreach {
       case (id, ser) ⇒ if (0 <= id && id < size) table(id) = ser
     }
@@ -393,7 +392,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     serializer.isInstanceOf[JavaSerializer] && !system.settings.AllowJavaSerialization
   }
 
-  private def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def shouldWarnAboutJavaSerializer(serializedClass: Class[_], serializer: Serializer) = {
 
     def suppressWarningOnNonSerializationVerification(serializedClass: Class[_]) = {
       //suppressed, only when warn-on-no-serialization-verification = off, and extending NoSerializationVerificationNeeded

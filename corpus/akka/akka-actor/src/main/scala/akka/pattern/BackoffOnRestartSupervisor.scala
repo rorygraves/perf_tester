@@ -21,10 +21,10 @@ private class BackoffOnRestartSupervisor(
   maxBackoff: FiniteDuration,
   val reset: BackoffReset,
   randomFactor: Double,
-  strategy: OneForOneStrategy
-)
-    extends Actor with HandleBackoff
-    with ActorLogging {
+  strategy: OneForOneStrategy,
+  val replyWhileStopped: Option[Any])
+  extends Actor with HandleBackoff
+  with ActorLogging {
 
   import context._
   import BackoffSupervisor._

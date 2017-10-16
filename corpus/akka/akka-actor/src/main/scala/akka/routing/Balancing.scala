@@ -68,9 +68,8 @@ private[akka] final class BalancingRoutingLogic extends RoutingLogic {
 final case class BalancingPool(
   val nrOfInstances: Int,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId
-)
-    extends Pool {
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  extends Pool {
 
   def this(config: Config) =
     this(nrOfInstances = config.getInt("nr-of-instances"))
@@ -117,13 +116,11 @@ final case class BalancingPool(
         dispatcherId,
         // use the user defined 'pool-dispatcher' config as fallback, if any
         if (systemConfig.hasPath(deployDispatcherConfigPath)) systemConfig.getConfig(deployDispatcherConfigPath)
-        else ConfigFactory.empty
-      )
+        else ConfigFactory.empty)
 
       dispatchers.registerConfigurator(dispatcherId, new BalancingDispatcherConfigurator(
         dispatcherConfig,
-        dispatchers.prerequisites
-      ))
+        dispatchers.prerequisites))
     }
 
     val routeePropsWithDispatcher = routeeProps.withDispatcher(dispatcherId)

@@ -284,8 +284,7 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier ⇒
   }
 
   private val mappings = new AtomicReference[ManagedActorClassificationMappings](
-    new ManagedActorClassificationMappings(0, Map.empty[ActorRef, immutable.TreeSet[ActorRef]])
-  )
+    new ManagedActorClassificationMappings(0, Map.empty[ActorRef, immutable.TreeSet[ActorRef]]))
 
   private val empty = immutable.TreeSet.empty[ActorRef]
 

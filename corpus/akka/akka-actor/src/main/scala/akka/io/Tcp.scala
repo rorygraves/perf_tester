@@ -6,15 +6,19 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.net.Socket
+
 import akka.io.Inet._
 import com.typesafe.config.Config
+
 import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import akka.util.{ Helpers, ByteString }
+import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.actor._
 import java.lang.{ Iterable ⇒ JIterable }
+
+import akka.annotation.InternalApi
 
 /**
  * TCP Extension for Akka’s IO layer.
@@ -115,8 +119,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     localAddress: Option[InetSocketAddress] = None,
     options: immutable.Traversable[SocketOption] = Nil,
     timeout: Option[FiniteDuration] = None,
-    pullMode: Boolean = false
-  ) extends Command
+    pullMode: Boolean = false) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -142,8 +145,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     localAddress: InetSocketAddress,
     backlog: Int = 100,
     options: immutable.Traversable[SocketOption] = Nil,
-    pullMode: Boolean = false
-  ) extends Command
+    pullMode: Boolean = false) extends Command
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
@@ -361,7 +363,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * respective write has been written completely.
    */
   final case class CompoundWrite(override val head: SimpleWriteCommand, tailCommand: WriteCommand) extends WriteCommand
-      with immutable.Iterable[SimpleWriteCommand] {
+    with immutable.Iterable[SimpleWriteCommand] {
 
     def iterator: Iterator[SimpleWriteCommand] =
       new Iterator[SimpleWriteCommand] {
@@ -395,8 +397,12 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * This command needs to be sent to the connection actor after a `SuspendReading`
    * command in order to resume reading from the socket.
+   *
+   * (This message is marked with DeadLetterSuppression as it is prone to end up in
+   *  DeadLetters when the connection is torn down at the same time as the user wants
+   *  to resume reading on that connection.)
    */
-  case object ResumeReading extends Command
+  case object ResumeReading extends Command with DeadLetterSuppression
 
   /**
    * This message enables the accepting of the next connection if read throttling is enabled
@@ -429,7 +435,25 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * Whenever a command cannot be completed, the queried actor will reply with
    * this message, wrapping the original command which failed.
    */
-  final case class CommandFailed(cmd: Command) extends Event
+  final case class CommandFailed(cmd: Command) extends Event {
+    @transient private var _cause: Option[Throwable] = None
+
+    /** Optionally contains the cause why the command failed. */
+    def cause: Option[Throwable] = _cause
+
+    // Needs to be added with a mutable var for compatibility reasons.
+    // The cause will be lost in the unlikely case that someone uses `copy` on an instance.
+    @InternalApi /** Creates a copy of this object with a new cause set. */
+    private[akka] def withCause(cause: Throwable): CommandFailed = {
+      val newInstance = copy()
+      newInstance._cause = Some(cause)
+      newInstance
+    }
+    @InternalApi
+    private[akka] def causedByString = _cause.map(c ⇒ s" because of ${c.getMessage}").getOrElse("")
+
+    override def toString: String = s"CommandFailed($cmd)$causedByString"
+  }
 
   /**
    * When `useResumeWriting` is in effect as indicated in the [[Register]] message,
@@ -567,8 +591,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(classOf[TcpManager], this).withDispatcher(Settings.ManagementDispatcher).withDeploy(Deploy.local),
-      name = "IO-TCP"
-    )
+      name = "IO-TCP")
   }
 
   /**
@@ -634,8 +657,7 @@ object TcpMessage {
     localAddress: InetSocketAddress,
     options: JIterable[SocketOption],
     timeout: FiniteDuration,
-    pullMode: Boolean
-  ): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
+    pullMode: Boolean): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without
@@ -670,16 +692,14 @@ object TcpMessage {
     endpoint: InetSocketAddress,
     backlog: Int,
     options: JIterable[SocketOption],
-    pullMode: Boolean
-  ): Command = Bind(handler, endpoint, backlog, options, pullMode)
+    pullMode: Boolean): Command = Bind(handler, endpoint, backlog, options, pullMode)
   /**
    * Open a listening socket without specifying options.
    */
   def bind(
     handler: ActorRef,
     endpoint: InetSocketAddress,
-    backlog: Int
-  ): Command = Bind(handler, endpoint, backlog, Nil)
+    backlog: Int): Command = Bind(handler, endpoint, backlog, Nil)
 
   /**
    * This message must be sent to a TCP connection actor after receiving the

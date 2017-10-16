@@ -50,8 +50,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
     proposedTarget: Routee = NoRoutee,
     currentScore: Long = Long.MaxValue,
     at: Int = 0,
-    deep: Boolean = false
-  ): Routee = {
+    deep: Boolean = false): Routee = {
     if (targets.isEmpty)
       NoRoutee
     else if (at >= targets.size) {
@@ -177,16 +176,14 @@ final case class SmallestMailboxPool(
   val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false
-)
-    extends Pool with PoolOverrideUnsetConfig[SmallestMailboxPool] {
+  override val usePoolDispatcher: Boolean = false)
+  extends Pool with PoolOverrideUnsetConfig[SmallestMailboxPool] {
 
   def this(config: Config) =
     this(
       nrOfInstances = config.getInt("nr-of-instances"),
       resizer = Resizer.fromConfig(config),
-      usePoolDispatcher = config.hasPath("pool-dispatcher")
-    )
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API

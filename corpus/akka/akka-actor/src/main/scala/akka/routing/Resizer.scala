@@ -84,8 +84,7 @@ case object DefaultResizer {
       rampupRate = resizerConfig.getDouble("rampup-rate"),
       backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
       backoffRate = resizerConfig.getDouble("backoff-rate"),
-      messagesPerResize = resizerConfig.getInt("messages-per-resize")
-    )
+      messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 
   def fromConfig(resizerConfig: Config): Option[DefaultResizer] =
     if (resizerConfig.getBoolean("resizer.enabled"))
@@ -127,14 +126,13 @@ case object DefaultResizer {
  */
 @SerialVersionUID(1L)
 case class DefaultResizer(
-    val lowerBound: Int = 1,
-    val upperBound: Int = 10,
-    val pressureThreshold: Int = 1,
-    val rampupRate: Double = 0.2,
-    val backoffThreshold: Double = 0.3,
-    val backoffRate: Double = 0.1,
-    val messagesPerResize: Int = 10
-) extends Resizer {
+  val lowerBound: Int = 1,
+  val upperBound: Int = 10,
+  val pressureThreshold: Int = 1,
+  val rampupRate: Double = 0.2,
+  val backoffThreshold: Double = 0.3,
+  val backoffRate: Double = 0.1,
+  val messagesPerResize: Int = 10) extends Resizer {
 
   /**
    * Java API constructor for default values except bounds.
@@ -254,9 +252,8 @@ private[akka] final class ResizablePoolCell(
   _routerDispatcher: MessageDispatcher,
   _routeeProps: Props,
   _supervisor: InternalActorRef,
-  val pool: Pool
-)
-    extends RoutedActorCell(_system, _ref, _routerProps, _routerDispatcher, _routeeProps, _supervisor) {
+  val pool: Pool)
+  extends RoutedActorCell(_system, _ref, _routerProps, _routerDispatcher, _routeeProps, _supervisor) {
 
   require(pool.resizer.isDefined, "RouterConfig must be a Pool with defined resizer")
   val resizer = pool.resizer.get
@@ -317,7 +314,7 @@ private[akka] object ResizablePoolActor {
  * INTERNAL API
  */
 private[akka] class ResizablePoolActor(supervisorStrategy: SupervisorStrategy)
-    extends RouterPoolActor(supervisorStrategy) {
+  extends RouterPoolActor(supervisorStrategy) {
   import ResizablePoolActor._
 
   val resizerCell = context match {

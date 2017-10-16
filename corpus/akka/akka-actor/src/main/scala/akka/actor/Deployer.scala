@@ -35,13 +35,12 @@ object Deploy {
  */
 @SerialVersionUID(2L)
 final case class Deploy(
-    path: String = "",
-    config: Config = ConfigFactory.empty,
-    routerConfig: RouterConfig = NoRouter,
-    scope: Scope = NoScopeGiven,
-    dispatcher: String = Deploy.NoDispatcherGiven,
-    mailbox: String = Deploy.NoMailboxGiven
-) {
+  path: String = "",
+  config: Config = ConfigFactory.empty,
+  routerConfig: RouterConfig = NoRouter,
+  scope: Scope = NoScopeGiven,
+  dispatcher: String = Deploy.NoDispatcherGiven,
+  mailbox: String = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -70,8 +69,7 @@ final case class Deploy(
       routerConfig.withFallback(other.routerConfig),
       scope.withFallback(other.scope),
       if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
-      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox
-    )
+      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
   }
 }
 
@@ -195,8 +193,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
         throw new IllegalArgumentException(
           s"Cannot instantiate router [$fqn], defined in [$key], " +
             s"make sure it extends [${classOf[RouterConfig]}] and has constructor with " +
-            s"[${args(0)._1.getName}] and optional [${args(1)._1.getName}] parameter", cause
-        )
+            s"[${args(0)._1.getName}] and optional [${args(1)._1.getName}] parameter", cause)
 
       // first try with Config param, and then with Config and DynamicAccess parameters
       val args1 = List(classOf[Config] → deployment2)

@@ -159,7 +159,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
 
 /**
  * This trait represents the Scala Actor API
- * There are implicit conversions in ../actor/Implicits.scala
+ * There are implicit conversions in package.scala
  * from ActorRef -&gt; ScalaActorRef and back
  */
 trait ScalaActorRef { ref: ActorRef ⇒
@@ -303,9 +303,8 @@ private[akka] class LocalActorRef private[akka] (
   _dispatcher: MessageDispatcher,
   _mailboxType: MailboxType,
   _supervisor: InternalActorRef,
-  override val path: ActorPath
-)
-    extends ActorRefWithCell with LocalRef {
+  override val path: ActorPath)
+  extends ActorRefWithCell with LocalRef {
 
   /*
    * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
@@ -423,8 +422,7 @@ private[akka] final case class SerializedActorRef private (path: String) {
     case null ⇒
       throw new IllegalStateException(
         "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'"
-      )
+          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒
       someSystem.provider.resolveActorRef(path)
   }
@@ -474,7 +472,9 @@ sealed trait AllDeadLetters {
 
 /**
  * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
- * to the ActorSystem's EventStream
+ * to the ActorSystem's EventStream.
+ *
+ * When this message was sent without a sender [[ActorRef]], `sender` will be `system.deadLetters`.
  */
 @SerialVersionUID(1L)
 final case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters {
@@ -517,10 +517,9 @@ private[akka] object DeadLetterActorRef {
  * INTERNAL API
  */
 private[akka] class EmptyLocalActorRef(
-    override val provider: ActorRefProvider,
-    override val path: ActorPath,
-    val eventStream: EventStream
-) extends MinimalActorRef {
+  override val provider: ActorRefProvider,
+  override val path: ActorPath,
+  val eventStream: EventStream) extends MinimalActorRef {
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated = true
@@ -543,8 +542,7 @@ private[akka] class EmptyLocalActorRef(
     case w: Watch ⇒
       if (w.watchee == this && w.watcher != this)
         w.watcher.sendSystemMessage(
-          DeathWatchNotification(w.watchee, existenceConfirmed = false, addressTerminated = false)
-        )
+          DeathWatchNotification(w.watchee, existenceConfirmed = false, addressTerminated = false))
       true
     case _: Unwatch ⇒ true // Just ignore
     case Identify(messageId) ⇒
@@ -572,10 +570,9 @@ private[akka] class EmptyLocalActorRef(
  * INTERNAL API
  */
 private[akka] class DeadLetterActorRef(
-    _provider: ActorRefProvider,
-    _path: ActorPath,
-    _eventStream: EventStream
-) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+  _provider: ActorRefProvider,
+  _path: ActorPath,
+  _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case null ⇒ throw InvalidMessageException("Message is null")
@@ -589,8 +586,7 @@ private[akka] class DeadLetterActorRef(
     case w: Watch ⇒
       if (w.watchee != this && w.watcher != this)
         w.watcher.sendSystemMessage(
-          DeathWatchNotification(w.watchee, existenceConfirmed = false, addressTerminated = false)
-        )
+          DeathWatchNotification(w.watchee, existenceConfirmed = false, addressTerminated = false))
       true
     case _ ⇒ super.specialHandle(msg, sender)
   }
@@ -605,11 +601,10 @@ private[akka] class DeadLetterActorRef(
  * INTERNAL API
  */
 private[akka] class VirtualPathContainer(
-    override val provider: ActorRefProvider,
-    override val path: ActorPath,
-    override val getParent: InternalActorRef,
-    val log: MarkerLoggingAdapter
-) extends MinimalActorRef {
+  override val provider: ActorRefProvider,
+  override val path: ActorPath,
+  override val getParent: InternalActorRef,
+  val log: MarkerLoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
@@ -711,11 +706,10 @@ private[akka] class VirtualPathContainer(
  * Terminated message the watched actorRef is unwatch()ed.
  */
 private[akka] final class FunctionRef(
-    override val path: ActorPath,
-    override val provider: ActorRefProvider,
-    val eventStream: EventStream,
-    f: (ActorRef, Any) ⇒ Unit
-) extends MinimalActorRef {
+  override val path: ActorPath,
+  override val provider: ActorRefProvider,
+  val eventStream: EventStream,
+  f: (ActorRef, Any) ⇒ Unit) extends MinimalActorRef {
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     f(sender, message)

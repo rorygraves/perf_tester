@@ -30,6 +30,11 @@ private final case class SchedulerException(msg: String) extends akka.AkkaExcept
  *  1) the system’s com.typesafe.config.Config (from system.settings.config)
  *  2) a akka.event.LoggingAdapter
  *  3) a java.util.concurrent.ThreadFactory
+ *
+ * Please note that this scheduler implementation is higly optimised for high-throughput
+ * and high-frequency events. It is not to be confused with long-term schedulers such as
+ * Quartz. The scheduler will throw an exception if attempts are made to schedule too far
+ * into the future (which by default is around 8 months (`Int.MaxValue` seconds).
  */
 trait Scheduler {
   /**
@@ -44,8 +49,7 @@ trait Scheduler {
     initialDelay: FiniteDuration,
     interval: FiniteDuration,
     receiver: ActorRef,
-    message: Any
-  )(implicit
+    message: Any)(implicit
     executor: ExecutionContext,
     sender: ActorRef = Actor.noSender): Cancellable =
     schedule(initialDelay, interval, new Runnable {
@@ -73,11 +77,9 @@ trait Scheduler {
    */
   final def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration
-  )(f: ⇒ Unit)(
+    interval: FiniteDuration)(f: ⇒ Unit)(
     implicit
-    executor: ExecutionContext
-  ): Cancellable =
+    executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run = f })
 
   /**
@@ -94,25 +96,29 @@ trait Scheduler {
    * If the `Runnable` throws an exception the repeated scheduling is aborted,
    * i.e. the function will not be invoked any more.
    *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
+   *
    * Java API
    */
   def schedule(
     initialDelay: FiniteDuration,
     interval: FiniteDuration,
-    runnable: Runnable
-  )(implicit executor: ExecutionContext): Cancellable
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
    * to pass before the message is sent.
+   *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
    *
    * Java & Scala API
    */
   final def scheduleOnce(
     delay: FiniteDuration,
     receiver: ActorRef,
-    message: Any
-  )(implicit
+    message: Any)(implicit
     executor: ExecutionContext,
     sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
@@ -123,24 +129,28 @@ trait Scheduler {
    * Schedules a function to be run once with a delay, i.e. a time period that has
    * to pass before the function is run.
    *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
+   *
    * Scala API
    */
   final def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(
     implicit
-    executor: ExecutionContext
-  ): Cancellable =
+    executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = f })
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that
    * has to pass before the runnable is executed.
    *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
+   *
    * Java & Scala API
    */
   def scheduleOnce(
     delay: FiniteDuration,
-    runnable: Runnable
-  )(implicit executor: ExecutionContext): Cancellable
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * The maximum supported task frequency of this scheduler, i.e. the inverse
@@ -178,3 +188,10 @@ trait Cancellable {
   def isCancelled: Boolean
 }
 //#cancellable
+
+object Cancellable {
+  val alreadyCancelled: Cancellable = new Cancellable {
+    def cancel(): Boolean = false
+    def isCancelled: Boolean = true
+  }
+}

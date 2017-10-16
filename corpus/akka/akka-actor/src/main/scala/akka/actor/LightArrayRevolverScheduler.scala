@@ -37,9 +37,8 @@ import akka.dispatch.AbstractNodeQueue
 class LightArrayRevolverScheduler(
   config: Config,
   log: LoggingAdapter,
-  threadFactory: ThreadFactory
-)
-    extends Scheduler with Closeable {
+  threadFactory: ThreadFactory)
+  extends Scheduler with Closeable {
 
   import Helpers.Requiring
   import Helpers.ConfigOps
@@ -91,26 +90,23 @@ class LightArrayRevolverScheduler(
   override def schedule(
     initialDelay: FiniteDuration,
     delay: FiniteDuration,
-    runnable: Runnable
-  )(implicit executor: ExecutionContext): Cancellable = {
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
-    val preparedEC = executor.prepare()
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
       compareAndSet(InitialRepeatMarker, schedule(
-        preparedEC,
+        executor,
         new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
           override def run(): Unit = {
             try {
               runnable.run()
               val driftNanos = clock() - getAndAdd(delay.toNanos)
               if (self.get != null)
-                swap(schedule(preparedEC, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
+                swap(schedule(executor, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
             } catch {
               case _: SchedulerException ⇒ // ignore failure to enqueue or terminated target actor
             }
           }
-        }, roundUp(initialDelay)
-      ))
+        }, roundUp(initialDelay)))
 
       @tailrec private def swap(c: Cancellable): Unit = {
         get match {
@@ -135,7 +131,7 @@ class LightArrayRevolverScheduler(
   }
 
   override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
-    try schedule(executor.prepare(), runnable, roundUp(delay))
+    try schedule(executor, runnable, roundUp(delay))
     catch {
       case SchedulerException(msg) ⇒ throw new IllegalStateException(msg)
     }
@@ -316,7 +312,7 @@ object LightArrayRevolverScheduler {
    * INTERNAL API
    */
   protected[actor] class TaskHolder(@volatile var task: Runnable, var ticks: Int, executionContext: ExecutionContext)
-      extends TimerTask {
+    extends TimerTask {
 
     @tailrec
     private final def extractTask(replaceWith: Runnable): Runnable =

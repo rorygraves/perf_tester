@@ -113,11 +113,10 @@ object ProviderSelection {
  *                         `cluster`. It can also be a fully qualified class name of a provider.
  */
 final class BootstrapSetup private (
-    val classLoader: Option[ClassLoader] = None,
-    val config: Option[Config] = None,
-    val defaultExecutionContext: Option[ExecutionContext] = None,
-    val actorRefProvider: Option[ProviderSelection] = None
-) extends Setup {
+  val classLoader: Option[ClassLoader] = None,
+  val config: Option[Config] = None,
+  val defaultExecutionContext: Option[ExecutionContext] = None,
+  val actorRefProvider: Option[ProviderSelection] = None) extends Setup {
 
   def withClassloader(classLoader: ClassLoader): BootstrapSetup =
     new BootstrapSetup(Some(classLoader), config, defaultExecutionContext, actorRefProvider)
@@ -284,8 +283,7 @@ object ActorSystem {
     name: String,
     config: Option[Config] = None,
     classLoader: Option[ClassLoader] = None,
-    defaultExecutionContext: Option[ExecutionContext] = None
-  ): ActorSystem =
+    defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem =
     apply(name, ActorSystemSetup(BootstrapSetup(classLoader, config, defaultExecutionContext)))
 
   /**
@@ -509,6 +507,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    *
@@ -522,6 +521,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    */
@@ -529,8 +529,8 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
-   * (below which the logging actors reside) and the execute all registered
+   * will recursively stop all its child actors, the system guardian
+   * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
    * using the `dispatcher` of this actor system as it will have been shut down before the
@@ -540,7 +540,9 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed. Be careful to not schedule any operations
+   * and termination hooks have been executed. If you registered any callback with
+   * [[ActorSystem#registerOnTermination]], the returned Future from this method will not complete
+   * until all the registered callbacks are finished. Be careful to not schedule any operations
    * on the `dispatcher` of this actor system as it will have been shut down before this
    * future completes.
    */
@@ -630,19 +632,17 @@ abstract class ExtendedActorSystem extends ActorSystem {
 }
 
 private[akka] class ActorSystemImpl(
-    val name: String,
-    applicationConfig: Config,
-    classLoader: ClassLoader,
-    defaultExecutionContext: Option[ExecutionContext],
-    val guardianProps: Option[Props],
-    setup: ActorSystemSetup
-) extends ExtendedActorSystem {
+  val name: String,
+  applicationConfig: Config,
+  classLoader: ClassLoader,
+  defaultExecutionContext: Option[ExecutionContext],
+  val guardianProps: Option[Props],
+  setup: ActorSystemSetup) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
-        "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')"
-    )
+        "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')")
 
   import ActorSystem._
 
@@ -655,25 +655,43 @@ private[akka] class ActorSystemImpl(
         cause match {
           case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
-            if (settings.JvmExitOnFatalError) {
-              try {
-                markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
-                import System.err
-                err.print("Uncaught error from thread [")
-                err.print(thread.getName)
-                err.print("] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for ActorSystem[")
-                err.print(name)
-                err.println("]")
-                cause.printStackTrace(System.err)
-                System.err.flush()
-              } finally {
-                System.exit(-1)
-              }
-            } else {
-              markerLogging.error(LogMarker.Security, cause, "Uncaught fatal error from thread [{}] shutting down ActorSystem [{}]", thread.getName, name)
-              terminate()
-            }
+            if (cause.isInstanceOf[IncompatibleClassChangeError] && cause.getMessage.startsWith("akka"))
+              System.err.println(
+                s"""Detected ${cause.getClass.getName} error, which MAY be caused by incompatible Akka versions on the classpath.
+                  | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
+                  | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
+                  | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
+                  | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
+                 """.stripMargin.replaceAll("[\r\n]", ""))
+
+            if (settings.JvmExitOnFatalError)
+              try logFatalError("shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for", cause, thread)
+              finally System.exit(-1)
+            else
+              try logFatalError("shutting down", cause, thread)
+              finally terminate()
         }
+      }
+
+      @inline
+      private def logFatalError(message: String, cause: Throwable, thread: Thread): Unit = {
+        // First log to stderr as this has the best chance to get through in an 'emergency panic' situation:
+        import System.err
+        err.print("Uncaught error from thread [")
+        err.print(thread.getName)
+        err.print("]: ")
+        err.print(cause.getMessage)
+        err.print(", ")
+        err.print(message)
+        err.print(" for ActorSystem[")
+        err.print(name)
+        err.println("]")
+        System.err.flush()
+        cause.printStackTrace(System.err)
+        System.err.flush()
+
+        // Also log using the normal infrastructure - hope for the best:
+        markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}]: " + cause.getMessage + ", " + message + " ActorSystem[{}]", thread.getName, name)
       }
     }
 
@@ -697,7 +715,8 @@ private[akka] class ActorSystemImpl(
 
   def actorOf(props: Props, name: String): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, name, systemService = false)
-    else throw new UnsupportedOperationException("cannot create top-level actor from the outside on ActorSystem with custom user guardian")
+    else throw new UnsupportedOperationException(
+      s"cannot create top-level actor [$name] from the outside on ActorSystem with custom user guardian")
 
   def actorOf(props: Props): ActorRef =
     if (guardianProps.isEmpty) guardian.underlying.attachChild(props, systemService = false)
@@ -735,8 +754,7 @@ private[akka] class ActorSystemImpl(
       classOf[String] → name,
       classOf[Settings] → settings,
       classOf[EventStream] → eventStream,
-      classOf[DynamicAccess] → dynamicAccess
-    )
+      classOf[DynamicAccess] → dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   } catch {
@@ -750,8 +768,7 @@ private[akka] class ActorSystemImpl(
   val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes, defaultExecutionContext
-  ))
+    threadFactory, eventStream, scheduler, dynamicAccess, settings, mailboxes, defaultExecutionContext))
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
@@ -761,8 +778,7 @@ private[akka] class ActorSystemImpl(
         override protected def unbatchedExecute(r: Runnable): Unit = r.run()
         override protected def resubmitOnBlock: Boolean = false // Since we execute inline, no gain in resubmitting
         override def reportFailure(t: Throwable): Unit = dispatcher reportFailure t
-      }
-    )
+      })
 
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
@@ -827,8 +843,7 @@ private[akka] class ActorSystemImpl(
     dynamicAccess.createInstanceFor[Scheduler](settings.SchedulerClass, immutable.Seq(
       classOf[Config] → settings.config,
       classOf[LoggingAdapter] → log,
-      classOf[ThreadFactory] → threadFactory.withName(threadFactory.name + "-scheduler")
-    )).get
+      classOf[ThreadFactory] → threadFactory.withName(threadFactory.name + "-scheduler"))).get
   //#create-scheduler
 
   /*

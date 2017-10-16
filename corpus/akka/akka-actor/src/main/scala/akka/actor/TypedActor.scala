@@ -151,7 +151,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
         val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
-        val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
+        val serializedParameters = new Array[(Int, Class[_], Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
           val s = serialization.findSerializerFor(p)
@@ -176,14 +176,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       val system = akka.serialization.JavaSerializer.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
-          " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }"
-      )
+          " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
       val serialization = SerializationExtension(system)
       MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null ⇒ null
         case a if a.length == 0 ⇒ Array[AnyRef]()
         case a ⇒
-          val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
+          val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
             val (sId, manifest, bytes) = a(i)
             deserializedParameters(i) =
@@ -247,8 +246,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     // if we were remote deployed we need to create a local proxy
     if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
       TypedActor.get(context.system).createActorRefProxy(
-        TypedProps(interfaces, createInstance), proxyVar, context.self
-      )
+        TypedProps(interfaces, createInstance), proxyVar, context.self)
 
     private val me = withContext[T](createInstance)
 
@@ -524,13 +522,12 @@ object TypedProps {
  */
 @SerialVersionUID(1L)
 final case class TypedProps[T <: AnyRef] protected[TypedProps] (
-    interfaces: immutable.Seq[Class[_]],
-    creator: () ⇒ T,
-    dispatcher: String = TypedProps.defaultDispatcherId,
-    deploy: Deploy = Props.defaultDeploy,
-    timeout: Option[Timeout] = TypedProps.defaultTimeout,
-    loader: Option[ClassLoader] = TypedProps.defaultLoader
-) {
+  interfaces: immutable.Seq[Class[_]],
+  creator: () ⇒ T,
+  dispatcher: String = TypedProps.defaultDispatcherId,
+  deploy: Deploy = Props.defaultDeploy,
+  timeout: Option[Timeout] = TypedProps.defaultTimeout,
+  loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -541,8 +538,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def this(implementation: Class[T]) =
     this(
       interfaces = TypedProps.extractInterfaces(implementation),
-      creator = instantiator(implementation)
-    )
+      creator = instantiator(implementation))
 
   /**
    * Java API: Uses the supplied Creator as the factory for the TypedActor implementation,
@@ -553,8 +549,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(
       interfaces = TypedProps.extractInterfaces(interface),
-      creator = implementation.create _
-    )
+      creator = implementation.create _)
 
   /**
    * Java API: Uses the supplied class as the factory for the TypedActor implementation,
@@ -565,8 +560,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(
       interfaces = TypedProps.extractInterfaces(interface),
-      creator = instantiator(implementation)
-    )
+      creator = instantiator(implementation))
 
   /**
    * Returns a new TypedProps with the specified dispatcher set.
@@ -675,8 +669,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
     val proxy = Proxy.newProxyInstance(
       (props.loader orElse props.interfaces.collectFirst { case any ⇒ any.getClassLoader }).orNull, //If we have no loader, we arbitrarily take the loader of the first interface
       props.interfaces.toArray,
-      new TypedActorInvocationHandler(this, actorVar, props.timeout getOrElse DefaultReturnTimeout)
-    ).asInstanceOf[R]
+      new TypedActorInvocationHandler(this, actorVar, props.timeout getOrElse DefaultReturnTimeout)).asInstanceOf[R]
 
     if (proxyVar eq null) {
       actorVar set actorRef

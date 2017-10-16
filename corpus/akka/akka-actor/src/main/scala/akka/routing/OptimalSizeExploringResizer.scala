@@ -32,7 +32,7 @@ case object OptimalSizeExploringResizer {
   /**
    * INTERNAL API
    */
-  private[routing]type PoolSize = Int
+  private[routing] type PoolSize = Int
 
   /**
    * INTERNAL API
@@ -46,13 +46,12 @@ case object OptimalSizeExploringResizer {
     underutilizationStreak: Option[UnderUtilizationStreak] = None,
     messageCount: Long = 0,
     totalQueueLength: Int = 0,
-    checkTime: Long = 0
-  )
+    checkTime: Long = 0)
 
   /**
    * INTERNAL API
    */
-  private[routing]type PerformanceLog = Map[PoolSize, Duration]
+  private[routing] type PerformanceLog = Map[PoolSize, Duration]
 
   def apply(resizerCfg: Config): OptimalSizeExploringResizer =
     DefaultOptimalSizeExploringResizer(
@@ -65,8 +64,7 @@ case object OptimalSizeExploringResizer {
       exploreStepSize = resizerCfg.getDouble("explore-step-size"),
       explorationProbability = resizerCfg.getDouble("chance-of-exploration"),
       weightOfLatestMetric = resizerCfg.getDouble("weight-of-latest-metric"),
-      downsizeRatio = resizerCfg.getDouble("downsize-ratio")
-    )
+      downsizeRatio = resizerCfg.getDouble("downsize-ratio"))
 
 }
 
@@ -117,17 +115,16 @@ case object OptimalSizeExploringResizer {
  */
 @SerialVersionUID(1L)
 case class DefaultOptimalSizeExploringResizer(
-    lowerBound: PoolSize = 1,
-    upperBound: PoolSize = 30,
-    chanceOfScalingDownWhenFull: Double = 0.2,
-    actionInterval: Duration = 5.seconds,
-    numOfAdjacentSizesToConsiderDuringOptimization: Int = 16,
-    exploreStepSize: Double = 0.1,
-    downsizeRatio: Double = 0.8,
-    downsizeAfterUnderutilizedFor: Duration = 72.hours,
-    explorationProbability: Double = 0.4,
-    weightOfLatestMetric: Double = 0.5
-) extends OptimalSizeExploringResizer {
+  lowerBound: PoolSize = 1,
+  upperBound: PoolSize = 30,
+  chanceOfScalingDownWhenFull: Double = 0.2,
+  actionInterval: Duration = 5.seconds,
+  numOfAdjacentSizesToConsiderDuringOptimization: Int = 16,
+  exploreStepSize: Double = 0.1,
+  downsizeRatio: Double = 0.8,
+  downsizeAfterUnderutilizedFor: Duration = 72.hours,
+  explorationProbability: Double = 0.4,
+  weightOfLatestMetric: Double = 0.5) extends OptimalSizeExploringResizer {
   /**
    * Leave package accessible for testing purpose
    */
@@ -202,8 +199,7 @@ case class DefaultOptimalSizeExploringResizer(
       else
         Some(UnderUtilizationStreak(
           record.underutilizationStreak.fold(now)(_.start),
-          Math.max(record.underutilizationStreak.fold(0)(_.highestUtilization), utilized)
-        ))
+          Math.max(record.underutilizationStreak.fold(0)(_.highestUtilization), utilized)))
 
     val newPerformanceLog: PerformanceLog =
       if (fullyUtilized && record.underutilizationStreak.isEmpty && record.checkTime > 0) {
@@ -225,8 +221,7 @@ case class DefaultOptimalSizeExploringResizer(
       underutilizationStreak = newUnderutilizationStreak,
       messageCount = messageCounter,
       totalQueueLength = totalQueueLength,
-      checkTime = System.nanoTime()
-    )
+      checkTime = System.nanoTime())
 
     (newPerformanceLog, newRecord)
 

@@ -270,8 +270,7 @@ case object FromConfig extends FromConfig {
   @inline final def apply(
     resizer: Option[Resizer] = None,
     supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-    routerDispatcher: String = Dispatchers.DefaultDispatcherId
-  ) =
+    routerDispatcher: String = Dispatchers.DefaultDispatcherId) =
     new FromConfig(resizer, supervisorStrategy, routerDispatcher)
 
   @inline final def unapply(fc: FromConfig): Option[String] = Some(fc.routerDispatcher)
@@ -287,10 +286,9 @@ case object FromConfig extends FromConfig {
  */
 @SerialVersionUID(1L)
 class FromConfig(
-    override val resizer: Option[Resizer],
-    override val supervisorStrategy: SupervisorStrategy,
-    override val routerDispatcher: String
-) extends Pool {
+  override val resizer: Option[Resizer],
+  override val supervisorStrategy: SupervisorStrategy,
+  override val routerDispatcher: String) extends Pool {
 
   def this() = this(None, Pool.defaultSupervisorStrategy, Dispatchers.DefaultDispatcherId)
 

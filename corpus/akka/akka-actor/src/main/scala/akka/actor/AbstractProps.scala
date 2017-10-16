@@ -110,7 +110,6 @@ private[akka] trait AbstractProps {
 
     if ((enclosingClass ne null) && !hasValidConstructor)
       throw new IllegalArgumentException(
-        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level"
-      )
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level")
   }
 }

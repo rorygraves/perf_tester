@@ -92,8 +92,7 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
           case MkChild(props, name) ⇒ sender() ! context.actorOf(props, name)
           case any ⇒ sender() ! any
         }
-      }
-    ), "dsl").asInstanceOf[RepointableActorRef]
+      }), "dsl").asInstanceOf[RepointableActorRef]
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")
 

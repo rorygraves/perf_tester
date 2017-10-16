@@ -8,10 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem.Settings
 import akka.actor._
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
-import akka.util.Helpers.toRootLowerCase
+import akka.util.Helpers
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -117,8 +118,7 @@ trait LoggingBus extends ActorEventBus {
           }).recover({
             case e ⇒ throw new ConfigurationException(
               "Logger specified in config can't be loaded [" + loggerName +
-                "] due to [" + e.toString + "]", e
-            )
+                "] due to [" + e.toString + "]", e)
           }).get
         }
       guard.withGuard {
@@ -456,7 +456,7 @@ object Logging {
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = toRootLowerCase(s) match {
+  def levelFor(s: String): Option[LogLevel] = Helpers.toRootLowerCase(s) match {
     case "off" ⇒ Some(OffLevel)
     case "error" ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
@@ -750,7 +750,7 @@ object Logging {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
   }
   class Error3(cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
-      extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
+    extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
   }
 
@@ -865,11 +865,6 @@ object Logging {
   trait StdOutLogger {
 
     import StdOutLogger._
-    import java.text.SimpleDateFormat
-    import java.util.Date
-
-    private val date = new Date()
-    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
 
     // format: OFF
     // FIXME: remove those when we have the chance to break binary compatibility
@@ -880,10 +875,7 @@ object Logging {
     private val debugFormat             = DebugFormat
     // format: ON
 
-    def timestamp(event: LogEvent): String = synchronized {
-      date.setTime(event.timestamp)
-      dateFormat.format(date)
-    } // SDF isn't threadsafe
+    def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
     def print(event: Any): Unit = event match {
       case e: Error ⇒ error(e)
@@ -902,8 +894,7 @@ object Logging {
           event.thread.getName,
           event.logSource,
           event.message,
-          stackTraceFor(event.cause)
-        ))
+          stackTraceFor(event.cause)))
       case _ ⇒
         val f = if (event.cause == Error.NoCause) ErrorFormatWithoutCause else ErrorFormat
         println(f.format(
@@ -911,8 +902,7 @@ object Logging {
           event.thread.getName,
           event.logSource,
           event.message,
-          stackTraceFor(event.cause)
-        ))
+          stackTraceFor(event.cause)))
     }
 
     def warning(event: Warning): Unit = event match {
@@ -922,15 +912,13 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
       case _ ⇒
         println(WarningFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
     }
 
     def info(event: Info): Unit = event match {
@@ -940,15 +928,13 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
       case _ ⇒
         println(InfoFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
     }
 
     def debug(event: Debug): Unit = event match {
@@ -958,15 +944,13 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
       case _ ⇒
         println(DebugFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
-          event.message
-        ))
+          event.message))
     }
   }
   object StdOutLogger {
@@ -1037,7 +1021,7 @@ object Logging {
    */
   def stackTraceFor(e: Throwable): String = e match {
     case null | Error.NoCause ⇒ ""
-    case _: NoStackTrace ⇒ " (" + e.getClass.getName + ")"
+    case _: NoStackTrace ⇒ s" (${e.getClass.getName}: ${e.getMessage})"
     case other ⇒
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)
@@ -1070,6 +1054,9 @@ object Logging {
  * {{{
  * log.error(exception, "Exception while processing {} in state {}", msg, state)
  * }}}
+ *
+ * More than four arguments can be defined by using an `Array` with the method with
+ * one argument parameter.
  */
 trait LoggingAdapter {
 
@@ -1106,6 +1093,9 @@ trait LoggingAdapter {
   def error(cause: Throwable, message: String): Unit = { if (isErrorEnabled) notifyError(cause, message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def error(cause: Throwable, template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
@@ -1132,6 +1122,9 @@ trait LoggingAdapter {
   def error(message: String): Unit = { if (isErrorEnabled) notifyError(message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def error(template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(format1(template, arg1)) }
@@ -1158,6 +1151,9 @@ trait LoggingAdapter {
   def warning(message: String): Unit = { if (isWarningEnabled) notifyWarning(message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def warning(template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
@@ -1184,6 +1180,9 @@ trait LoggingAdapter {
   def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def info(template: String, arg1: Any): Unit = { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
@@ -1210,6 +1209,9 @@ trait LoggingAdapter {
   def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def debug(template: String, arg1: Any): Unit = { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
@@ -1235,6 +1237,9 @@ trait LoggingAdapter {
   def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
   /**
    * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    */
   def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
   /**
@@ -1267,6 +1272,10 @@ trait LoggingAdapter {
     case Logging.DebugLevel ⇒ if (isDebugEnabled) notifyDebug(message)
   }
 
+  /**
+   * If `arg` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   */
   private def format1(t: String, arg: Any): String = arg match {
     case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
     case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
@@ -1395,7 +1404,9 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
   def clearMDC(): Unit = mdc(emptyMDC)
 }
 
-final class LogMarker(val name: String)
+/** DO NOT INHERIT: Class is open only for use by akka-slf4j*/
+@DoNotInherit
+class LogMarker(val name: String)
 object LogMarker {
   /** The Marker is internally transferred via MDC using using this key */
   private[akka] final val MDCKey = "marker"
@@ -1422,9 +1433,8 @@ class MarkerLoggingAdapter(
   override val bus: LoggingBus,
   override val logSource: String,
   override val logClass: Class[_],
-  loggingFilter: LoggingFilter
-)
-    extends BusLogging(bus, logSource, logClass, loggingFilter) {
+  loggingFilter: LoggingFilter)
+  extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
@@ -1438,15 +1448,18 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1), mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1454,7 +1467,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1462,7 +1475,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1470,7 +1483,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at error level, without providing the exception that caused the error.
@@ -1483,10 +1496,13 @@ class MarkerLoggingAdapter(
   /**
    * Message template with 1 replacement argument.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1), mdc, marker))
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1523,10 +1539,13 @@ class MarkerLoggingAdapter(
   /**
    * Message template with 1 replacement argument.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1), mdc, marker))
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1563,10 +1582,13 @@ class MarkerLoggingAdapter(
   /**
    * Message template with 1 replacement argument.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1), mdc, marker))
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1603,10 +1625,13 @@ class MarkerLoggingAdapter(
   /**
    * Message template with 1 replacement argument.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1), mdc, marker))
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1632,21 +1657,26 @@ class MarkerLoggingAdapter(
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
     if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
+  // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
+  private def format1(t: String, arg: Any): String = arg match {
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
+    case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
+    case x ⇒ format(t, x)
+  }
 }
 
 final class DiagnosticMarkerBusLoggingAdapter(
   override val bus: LoggingBus,
   override val logSource: String,
   override val logClass: Class[_],
-  loggingFilter: LoggingFilter
-)
-    extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
+  loggingFilter: LoggingFilter)
+  extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**
  * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
  */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_], loggingFilter: LoggingFilter)
-    extends LoggingAdapter {
+  extends LoggingAdapter {
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
   // association to an ActorSystem

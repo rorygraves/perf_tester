@@ -29,9 +29,8 @@ private[akka] class RepointableActorRef(
   val dispatcher: MessageDispatcher,
   val mailboxType: MailboxType,
   val supervisor: InternalActorRef,
-  val path: ActorPath
-)
-    extends ActorRefWithCell with RepointableRef {
+  val path: ActorPath)
+  extends ActorRefWithCell with RepointableRef {
 
   import AbstractActorRef.{ cellOffset, lookupOffset }
 
@@ -178,11 +177,10 @@ private[akka] class RepointableActorRef(
 }
 
 private[akka] class UnstartedCell(
-    val systemImpl: ActorSystemImpl,
-    val self: RepointableActorRef,
-    val props: Props,
-    val supervisor: InternalActorRef
-) extends Cell {
+  val systemImpl: ActorSystemImpl,
+  val self: RepointableActorRef,
+  val props: Props,
+  val supervisor: InternalActorRef) extends Cell {
 
   /*
    * This lock protects all accesses to this cell’s queues. It also ensures

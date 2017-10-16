@@ -7,19 +7,22 @@ package akka.actor
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.sysmsg._
-import akka.event.Logging.{ LogEvent, Debug, Error }
+import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
-import java.io.{ ObjectOutputStream, NotSerializableException }
+import java.io.{ NotSerializableException, ObjectOutputStream }
+
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
 import akka.util.Reflect
 import akka.japi.pf.ReceiveBuilder
 import akka.actor.AbstractActor.Receive
+import akka.annotation.InternalApi
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -150,6 +153,14 @@ trait ActorContext extends ActorRefFactory {
   def watch(subject: ActorRef): ActorRef
 
   /**
+   * Registers this actor as a Monitor for the provided ActorRef.
+   * This actor will receive the specified message when watched
+   * actor is terminated.
+   * @return the provided ActorRef
+   */
+  def watchWith(subject: ActorRef, msg: Any): ActorRef
+
+  /**
    * Unregisters this actor as Monitor for the provided ActorRef.
    * @return the provided ActorRef
    */
@@ -205,6 +216,7 @@ trait UntypedActorContext extends ActorContext {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] trait Cell {
   /**
    * The “self” reference which this Cell is attached to.
@@ -360,14 +372,13 @@ private[akka] class ActorCell(
   val self: InternalActorRef,
   final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
   val dispatcher: MessageDispatcher,
-  val parent: InternalActorRef
-)
-    extends UntypedActorContext with AbstractActor.ActorContext with Cell
-    with dungeon.ReceiveTimeout
-    with dungeon.Children
-    with dungeon.Dispatch
-    with dungeon.DeathWatch
-    with dungeon.FaultHandling {
+  val parent: InternalActorRef)
+  extends UntypedActorContext with AbstractActor.ActorContext with Cell
+  with dungeon.ReceiveTimeout
+  with dungeon.Children
+  with dungeon.Dispatch
+  with dungeon.DeathWatch
+  with dungeon.FaultHandling {
 
   import ActorCell._
 
@@ -385,6 +396,11 @@ private[akka] class ActorCell(
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
+
+  // Java API
+  final def getParent() = parent
+  // Java API
+  final def getSystem() = system
 
   protected def stash(msg: SystemMessage): Unit = {
     assert(msg.unlinked)
@@ -588,8 +604,7 @@ private[akka] class ActorCell(
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new Creator ... )
                or is missing an appropriate, reachable no-args constructor.
-              """, i.getCause
-          )
+              """, i.getCause)
           case x ⇒ throw ActorInitializationException(self, "exception during creation", x)
         }
     }

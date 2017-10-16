@@ -68,16 +68,14 @@ final case class RoundRobinPool(
   val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher: Boolean = false
-)
-    extends Pool with PoolOverrideUnsetConfig[RoundRobinPool] {
+  override val usePoolDispatcher: Boolean = false)
+  extends Pool with PoolOverrideUnsetConfig[RoundRobinPool] {
 
   def this(config: Config) =
     this(
       nrOfInstances = config.getInt("nr-of-instances"),
       resizer = Resizer.fromConfig(config),
-      usePoolDispatcher = config.hasPath("pool-dispatcher")
-    )
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -131,9 +129,8 @@ final case class RoundRobinPool(
 @SerialVersionUID(1L)
 final case class RoundRobinGroup(
   val paths: immutable.Iterable[String],
-  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId
-)
-    extends Group {
+  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  extends Group {
 
   def this(config: Config) =
     this(paths = immutableSeq(config.getStringList("routees.paths")))

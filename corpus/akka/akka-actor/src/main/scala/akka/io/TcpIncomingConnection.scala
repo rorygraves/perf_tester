@@ -21,9 +21,8 @@ private[io] class TcpIncomingConnection(
   registry: ChannelRegistry,
   bindHandler: ActorRef,
   options: immutable.Traversable[SocketOption],
-  readThrottling: Boolean
-)
-    extends TcpConnection(_tcp, _channel, readThrottling) {
+  readThrottling: Boolean)
+  extends TcpConnection(_tcp, _channel, readThrottling) {
 
   signDeathPact(bindHandler)
 

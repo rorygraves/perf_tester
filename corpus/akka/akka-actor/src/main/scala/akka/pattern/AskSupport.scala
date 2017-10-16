@@ -382,8 +382,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0)
         Future.failed[Any](
-          new IllegalArgumentException(s"""Timeout length must be positive, question not sent to [$actorSel]. Sender[$sender] sent the message of type "${message.getClass.getName}".""")
-        )
+          new IllegalArgumentException(s"""Timeout length must be positive, question not sent to [$actorSel]. Sender[$sender] sent the message of type "${message.getClass.getName}"."""))
       else {
         val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, message.getClass.getName, sender)
         actorSel.tell(message, a)
@@ -412,8 +411,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
       if (timeout.duration.length <= 0) {
         val message = messageFactory(ref.provider.deadLetters)
         Future.failed[Any](
-          new IllegalArgumentException(s"""Timeout length must be positive, question not sent to [$actorSel]. Sender[$sender] sent the message of type "${message.getClass.getName}".""")
-        )
+          new IllegalArgumentException(s"""Timeout length must be positive, question not sent to [$actorSel]. Sender[$sender] sent the message of type "${message.getClass.getName}"."""))
       } else {
         val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, "unknown", sender)
         val message = messageFactory(a)
@@ -436,7 +434,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
  * INTERNAL API
  */
 private[akka] final class PromiseActorRef private (val provider: ActorRefProvider, val result: Promise[Any], _mcn: String)
-    extends MinimalActorRef {
+  extends MinimalActorRef {
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
 
@@ -535,8 +533,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
           case Status.Success(r) ⇒ Success(r)
           case Status.Failure(f) ⇒ Failure(f)
           case other ⇒ Success(other)
-        }
-      ))) provider.deadLetters ! message
+        }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -601,8 +598,7 @@ private[akka] object PromiseActorRef {
     implicit val ec = a.internalCallingThreadExecutionContext
     val f = scheduler.scheduleOnce(timeout.duration) {
       result tryComplete Failure(
-        new AskTimeoutException(s"""Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]. Sender[$sender] sent message of type "${a.messageClassName}".""")
-      )
+        new AskTimeoutException(s"""Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]. Sender[$sender] sent message of type "${a.messageClassName}"."""))
     }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a

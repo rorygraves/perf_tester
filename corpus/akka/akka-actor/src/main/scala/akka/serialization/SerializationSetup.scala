@@ -24,8 +24,7 @@ object SerializationSetup {
    * @param createSerializers create pairs of serializer and the set of classes it should be used for
    */
   def create(
-    createSerializers: akka.japi.Function[ExtendedActorSystem, java.util.List[SerializerDetails]]
-  ): SerializationSetup =
+    createSerializers: akka.japi.Function[ExtendedActorSystem, java.util.List[SerializerDetails]]): SerializationSetup =
     apply(sys ⇒ createSerializers(sys).asScala.toVector)
 
 }
@@ -34,8 +33,7 @@ object SerializationSetup {
  * Setup for the serialization subsystem, constructor is *Internal API*, use factories in [[SerializationSetup()]]
  */
 final class SerializationSetup private (
-  val createSerializers: ExtendedActorSystem ⇒ immutable.Seq[SerializerDetails]
-) extends Setup
+  val createSerializers: ExtendedActorSystem ⇒ immutable.Seq[SerializerDetails]) extends Setup
 
 object SerializerDetails {
   /**
@@ -67,5 +65,4 @@ object SerializerDetails {
 final class SerializerDetails private (
   val alias: String,
   val serializer: Serializer,
-  val useFor: immutable.Seq[Class[_]]
-)
+  val useFor: immutable.Seq[Class[_]])

@@ -54,7 +54,7 @@ object ActorPath {
    * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
    */
   def fromString(s: String): ActorPath = s match {
-    case ActorPathExtractor(addr, elems) ⇒ RootActorPath(addr) / elems
+    case ActorPathExtractor(address, elems) ⇒ RootActorPath(address) / elems
     case _ ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
@@ -91,8 +91,7 @@ object ActorPath {
           s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(invalidAt)}] at position: $invalidAt. """ +
             """Actor paths MUST: """ +
             """not start with `$`, """ +
-            s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}."""
-        )
+            s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
     }
   }
 
@@ -255,8 +254,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
   require(
     name.length == 1 || name.indexOf('/', 1) == -1,
     "/ may only exist at the beginning of the root actors name, " +
-      "it is a path separator and is not legal in ActorPath names: [%s]" format name
-  )
+      "it is a path separator and is not legal in ActorPath names: [%s]" format name)
   require(name.indexOf('#') == -1, "# is a fragment separator and is not legal in ActorPath names: [%s]" format name)
 
   override def parent: ActorPath = this
@@ -369,10 +367,10 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
     appendUidFragment(sb).toString
   }
 
-  private def addressStringLengthDiff(addr: Address): Int = {
+  private def addressStringLengthDiff(address: Address): Int = {
     val r = root
     if (r.address.host.isDefined) 0
-    else (addr.toString.length - r.address.toString.length)
+    else (address.toString.length - r.address.toString.length)
   }
 
   /**

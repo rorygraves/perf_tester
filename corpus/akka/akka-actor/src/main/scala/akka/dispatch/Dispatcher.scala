@@ -31,9 +31,8 @@ class Dispatcher(
   val throughput: Int,
   val throughputDeadlineTime: Duration,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  val shutdownTimeout: FiniteDuration
-)
-    extends MessageDispatcher(_configurator) {
+  val shutdownTimeout: FiniteDuration)
+  extends MessageDispatcher(_configurator) {
 
   import configurator.prerequisites._
 
@@ -93,8 +92,7 @@ class Dispatcher(
   private val esUpdater = AtomicReferenceFieldUpdater.newUpdater(
     classOf[Dispatcher],
     classOf[LazyExecutorServiceDelegate],
-    "executorServiceDelegate"
-  )
+    "executorServiceDelegate")
 
   /**
    * INTERNAL API

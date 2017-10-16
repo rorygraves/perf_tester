@@ -53,8 +53,7 @@ private[io] trait WithUdpSend {
                 sender() ! CommandFailed(send)
                 log.debug(
                   "Failure while sending UDP datagram to remote address [{}]: {}",
-                  send.target, e
-                )
+                  send.target, e)
                 retriedSend = false
                 pendingSend = null
                 pendingCommander = null
@@ -63,8 +62,7 @@ private[io] trait WithUdpSend {
             sender() ! CommandFailed(send)
             log.debug(
               "Name resolution failed for remote address [{}]",
-              send.target
-            )
+              send.target)
             retriedSend = false
             pendingSend = null
             pendingCommander = null
