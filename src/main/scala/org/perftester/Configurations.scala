@@ -3,6 +3,7 @@ package org.perftester
 object Configurations {
 
   def namesList: String = configurations.keys.mkString(",")
+
   val configurations: Map[String, List[TestConfig]] = Map(
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"))
@@ -13,24 +14,23 @@ object Configurations {
     ),
 
     "mikelatestRory" -> List(
-            TestConfig("00_backend-baseline", BuildFromGit("c2a5883891a68180b143eb462c8b0cebc8d3b021"), extraArgs = List("-Yprofile-run-gc", "*")),
-            TestConfig("00_backend-0", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "0", "-Yprofile-run-gc", "all")),
-            TestConfig("00_backend-1", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "1", "-Yprofile-run-gc", "all")),
-            TestConfig("00_backend-2", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "2", "-Yprofile-run-gc", "all")),
-            TestConfig("00_backend-3", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
-            TestConfig("00_backend-4", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
-
+      TestConfig("00_backend-baseline", BuildFromGit("c2a5883891a68180b143eb462c8b0cebc8d3b021"), extraArgs = List("-Yprofile-run-gc", "*")),
+      TestConfig("00_backend-0", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "0", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-1", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "1", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-2", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "2", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-3", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-4", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
     )
 
 
-//    "mike_latest" -> List(
-//        TestConfig("00_backend-baseline", BuildFromDir("S:/scala/backend-before"), extraArgs = List("-Yprofile-run-gc", "*")),
-//      TestConfig("00_backend-0", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "0", "-Yprofile-run-gc", "all")),
-//      TestConfig("00_backend-1", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "1", "-Yprofile-run-gc", "all")),
-//      TestConfig("00_backend-2", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "2", "-Yprofile-run-gc", "all")),
-//      TestConfig("00_backend-3", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
-//      TestConfig("00_backend-4", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
-//    ),
+    //    "mike_latest" -> List(
+    //        TestConfig("00_backend-baseline", BuildFromDir("S:/scala/backend-before"), extraArgs = List("-Yprofile-run-gc", "*")),
+    //      TestConfig("00_backend-0", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "0", "-Yprofile-run-gc", "all")),
+    //      TestConfig("00_backend-1", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "1", "-Yprofile-run-gc", "all")),
+    //      TestConfig("00_backend-2", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "2", "-Yprofile-run-gc", "all")),
+    //      TestConfig("00_backend-3", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
+    //      TestConfig("00_backend-4", BuildFromDir("S:/scala/backend"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
+    //    ),
 
 
     //      TestConfig("00_backend-baseline", BuildFromDir("S:/scala/backend-before", false), extraArgs = List("-Yprofile-external-tool", "jvm")),

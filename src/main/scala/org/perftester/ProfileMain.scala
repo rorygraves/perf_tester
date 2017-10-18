@@ -42,11 +42,12 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val commitsWithId = List(
-
-      //      TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f"),extraJVMArgs = List()),
-      TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"), extraJVMArgs = List())
-    )
+    val commitsWithId = Configurations.configurations.getOrElse(envConfig.config, throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
+//    val commitsWithId = List(
+//
+//      //      TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f"),extraJVMArgs = List()),
+//      TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"), extraJVMArgs = List())
+//    )
 
     val results = commitsWithId map { testConfig =>
       val results = executeRuns(envConfig, testConfig, envConfig.iterations)
@@ -185,7 +186,7 @@ object ProfileMain {
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
     val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
     require(sbt.exists(),"sbt-launch.jar must exist in sbtlib directory")
-    List("java", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+    List("java","-Dfile.encoding=UTF8", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
   def runSbt(command: List[String], dir: Path, extraJVMArgs: List[String]): Unit = {
