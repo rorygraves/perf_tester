@@ -25,23 +25,28 @@ object SBTBot {
   final case class SBTCommand(cmd: String, id: String)
 
 
-  def props(workspaceRootDir: Path): Props = {
-    Props(new SBTBot(workspaceRootDir))
+  def props(workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: List[String]): Props = {
+    Props(new SBTBot(workspaceRootDir, sbtArgs, jvmArgs))
   }
 }
 
-class SBTBot private (workspaceRootDir: Path) extends Actor with ActorLogging {
+class SBTBot private (workspaceRootDir: Path,
+                      sbtArgs: List[String],
+                      jvmArgs: List[String]
+                     ) extends Actor with ActorLogging {
 
   import java.util.UUID
   private val promptStr = UUID.randomUUID().toString
-  private val execCommandArgs = List("sbt", "-Dsbt.log.noformat=true", s"""set shellPrompt := ( _ =>  "$promptStr\\n")""", "shell")
+  private val execCommandArgs: List[String] = List[String]("sbt") ::: jvmArgs :::
+    List("-Dsbt.log.noformat=true", s"""set shellPrompt := ( _ =>  "$promptStr\\n")""") :::
+    sbtArgs ::: List("shell")
 
   private var sbtProcess: ActorRef = _
   private val execCommand = ProcessCommand(execCommandArgs).withWorkingDir(workspaceRootDir)
 
   override def preStart: Unit = {
-    write.over(workspaceRootDir / "project" / "build.properties", "sbt.version=1.0.2")
-    write.over(workspaceRootDir / "project" / "plugins.sbt", "")
+//    write.over(workspaceRootDir / "project" / "build.properties", "sbt.version=1.0.2")
+//    write.over(workspaceRootDir / "project" / "plugins.sbt", "")
     log.info(s"Executing command: $execCommand")
     sbtProcess = context.actorOf(ProcessExecutor.props(execCommand), "exec")
   }

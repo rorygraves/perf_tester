@@ -8,8 +8,6 @@ import scala.collection.SortedSet
 
 case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterations: SortedSet[Int], phases: Set[String]) {
 
- // rawData foreach { r => require(iterations(r.iterationId), s" no iteration ${r.iterationId} in $testConfig") }
-
   rawData foreach { r => require(phases(r.phaseName), r.phaseName) }
 
   def filterIteration(min: Int, max: Int): RunResult = {
@@ -45,11 +43,11 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
 
     val mean = if (results.isEmpty) -1 else results.sum / size
 
-    def size = results.length
+    def size: Int = results.length
 
-    def median = at(.5)
+    def median: Double = at(.5)
 
-    def iqr = at(.75) - at(.25)
+    def iqr: Double = at(.75) - at(.25)
 
     def at(pos: Double) = if (results.isEmpty) -1 else {
       assert(pos >= 0.0)
@@ -110,5 +108,5 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
   }
 
   val all = new Detail(0, 1)
-  val std = new Detail(0, .9)
+  val std = new Detail(0, .90)
 }

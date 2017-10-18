@@ -7,6 +7,7 @@ case class EnvironmentConfig(
   testDir: Path= Path.home,
   outputDir: Path= Path.home,
   iterations: Int = 30,
+  config: String = "",
   analyseOnly: Boolean = false,
   runWithDebug: Boolean = false,
   overwriteResults: Boolean = true)

@@ -14,7 +14,7 @@ object SBTBotMain {
 
     val proxy = TestProbe()
     val parent = actorSystem.actorOf(Props(new Actor {
-      val child: ActorRef = context.actorOf(SBTBot.props(root / "workspace" / "akka"), "sbtbot")
+      val child: ActorRef = context.actorOf(SBTBot.props(root / "workspace" / "akka", List.empty, List.empty), "sbtbot")
       def receive: Receive = {
         case x if sender == child => proxy.ref forward x
         case x => child forward x

@@ -4,12 +4,18 @@ import java.io.File
 
 import ammonite.ops.Path
 
-object PerfTesterParser {
+object PerfTesterOptionParser {
   val parser = new scopt.OptionParser[EnvironmentConfig]("ProfileMain") {
     head("perf_tester", "1.0")
 
     opt[Int]('i', "iterations").action( (x, c) =>
       c.copy(iterations = x) ).text("The number of iterations to run (default 50)")
+
+    opt[String]('c', "config").required().valueName("<configName>").
+      action{ case (x, c) =>
+        assert(Configurations.configurations.contains(x), s"Configuration must exist - one of ${Configurations.namesList}")
+        c.copy(config = x) }.
+      text(s"The test configuration to run - one of ${Configurations.namesList} (required)")
 
     opt[File]('s', "scalaCDir").required().valueName("<dir>").
       action{ case (x, c) =>
