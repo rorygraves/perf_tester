@@ -43,11 +43,6 @@ object ProfileMain {
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
     val commitsWithId = Configurations.configurations.getOrElse(envConfig.config, throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
-//    val commitsWithId = List(
-//
-//      //      TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f"),extraJVMArgs = List()),
-//      TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"), extraJVMArgs = List())
-//    )
 
     val results = commitsWithId map { testConfig =>
       val results = executeRuns(envConfig, testConfig, envConfig.iterations)
