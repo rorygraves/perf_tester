@@ -60,7 +60,8 @@ object ProfileMain {
 
     if(envConfig.iterations > 10) {
       (10 until(envConfig.iterations, 10)) foreach { i =>
-
+        println("\n---------------------------------------------------------------------------------------------------")
+        println("---------------------------------------------------------------------------------------------------")
         heading(s"after $i 90%")
         results.foreach { case (config, configResult) =>
           printAggResults(config, configResult.filterIteration(i, 10000).std)
@@ -69,9 +70,9 @@ object ProfileMain {
         val phases: mutable.LinkedHashSet[String] = results.flatMap(r => r._2.phases)(scala.collection.breakOut)
 
         for (phase <- phases) {
-          heading(s"after $i 90%, phase $phase, no GC")
+          heading(s"after $i 90%, phase $phase")
           for {(config, configResult) <- results} {
-            printAggResults(config, configResult.filterIteration(i, 10000).filterPhases(phase).filterNoGc.std)
+            printAggResults(config, configResult.filterIteration(i, 10000).filterPhases(phase).std)
           }
         }
       }
