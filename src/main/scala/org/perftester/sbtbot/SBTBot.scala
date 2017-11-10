@@ -1,5 +1,7 @@
 package org.perftester.sbtbot
 
+import java.io.File
+
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import ammonite.ops.{Path, write}
 import org.perftester.sbtbot.SBTBot._
@@ -37,9 +39,20 @@ class SBTBot private (workspaceRootDir: Path,
 
   import java.util.UUID
   private val promptStr = UUID.randomUUID().toString
-  private val execCommandArgs: List[String] = List[String]("sbt") ::: jvmArgs :::
-    List("-Dsbt.log.noformat=true", s"""set shellPrompt := ( _ =>  "$promptStr\\n")""") :::
-    sbtArgs ::: List("shell")
+
+  def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
+    val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
+    require(sbt.exists(),"sbt-launch.jar must exist in sbtlib directory")
+    val raw = List("java","-Dfile.encoding=UTF8", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+    raw
+  }
+  private val execCommandArgs: List[String] = sbtCommandLine(jvmArgs) :::
+    List(
+      "-Dsbt.log.noformat=true",
+      s"""set shellPrompt := ( _ =>  "$promptStr")""") :::
+    sbtArgs ::: List("shell") map escape
+
+  def escape(s:String) = s.replace("\\", "\\\\").replace("\"", "\"\"")
 
   private var sbtProcess: ActorRef = _
   private val execCommand = ProcessCommand(execCommandArgs).withWorkingDir(workspaceRootDir)

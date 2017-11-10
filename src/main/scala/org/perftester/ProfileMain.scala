@@ -145,6 +145,8 @@ object ProfileMain {
         %%("git", "reset", "--hard", hash)(dir)
       case _ =>
     }
+    //can we get run of runsbt?
+    //runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
     runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
   }
   def buildDir(path :Path) = path  / "build" / "pack"
@@ -159,13 +161,6 @@ object ProfileMain {
       Files.delete(profileOutputFile.toNIO)
     val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
 
-
-
-    val args = List(s"++2.12.3=$mkPackPath", //"-debug",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""") ++
-      List.fill(repeats)(List("clean", "akka-actor/compile")).flatten
-
-
     val debugArgs=if (envConfig.runWithDebug)
       "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil else Nil
 
@@ -175,7 +170,6 @@ object ProfileMain {
 
     val jvmArgs = debugArgs ::: testConfig.extraJVMArgs
     SBTBotTestRunner.run(envConfig.testDir, programArgs, jvmArgs, repeats, List("clean", "akka-actor/compile"))
-//    runSbt(args, envConfig.testDir, jvmArgs)
   }
 
 
