@@ -49,8 +49,8 @@ class SBTBot private (workspaceRootDir: Path,
   private val execCommandArgs: List[String] = sbtCommandLine(jvmArgs) :::
     List(
       "-Dsbt.log.noformat=true",
-      s"""set shellPrompt := ( _ =>  "$promptStr")""") :::
-    sbtArgs ::: List("shell") map escape
+      s"""set shellPrompt := ( _ =>  "$promptStr" + System.getProperty("line.separator")) """) :::
+    sbtArgs ::: List("shell")// map escape
 
   def escape(s:String) = s.replace("\\", "\\\\").replace("\"", "\"\"")
 
@@ -147,10 +147,12 @@ class SBTBot private (workspaceRootDir: Path,
     case ProcessIO(source, content) =>
       log.info(s"ACT Got process IO $source $content")
       io :+= content
-      if (io.last.contains("] Total time: ")) {
+      if (io.last.contains("Total time: ")) {
+        println("SEEN TOTAL")
         seenIOTotalTime = true
       }
-      if(io.last == promptStr) {
+      if(io.last.contains(promptStr)) {
+        println("SEEN COMPLETE")
         seenComplete = true
         checkActiveComplete()
       }

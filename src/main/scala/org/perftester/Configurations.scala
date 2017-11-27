@@ -14,7 +14,8 @@ object Configurations {
     ),
 
     "mikelatestRory" -> List(
-      TestConfig("00_backend-baseline", BuildFromGit("c2a5883891a68180b143eb462c8b0cebc8d3b021"), extraArgs = List("-Yprofile-run-gc", "*")),
+      TestConfig("00_canon-baseline", BuildFromGit("cbd596339f2ead382be7cb625564a1217a207ca4"), extraArgs = List("-Yprofile-run-gc", "*")),
+      TestConfig("00_canon-updated", BuildFromGit("e12ac748cda072a42c67cfd0a0151947fc9c36e3"), extraArgs = List("-Yprofile-run-gc", "*")),
       //      TestConfig("00_backend-0", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "0", "-Yprofile-run-gc", "all")),
       //      TestConfig("00_backend-1", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "1", "-Yprofile-run-gc", "all")),
       //      TestConfig("00_backend-2", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "2", "-Yprofile-run-gc", "all")),
@@ -24,7 +25,7 @@ object Configurations {
 
 
     "mikeLatest" -> List(
-      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
+//      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
       //            TestConfig(s"00_backend-0S-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
       //              "-YaddBackendThreads", "0",
       //              "-YIoWriterThreads", "0",
