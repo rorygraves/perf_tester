@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Files
 
 import ammonite.ops.{%%, Path}
+import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 
@@ -44,44 +45,29 @@ object ProfileMain {
 
     val commitsWithId = Configurations.configurations.getOrElse(envConfig.config, throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
 
+    val outputFolder = envConfig.outputDir / envConfig.username / envConfig.config
+    Files.createDirectories(outputFolder.toNIO)
+    println("Output logging to " + outputFolder)
+
     val results = commitsWithId map { testConfig =>
-      val results = executeRuns(envConfig, testConfig, envConfig.iterations)
+      val results = executeRuns(envConfig, outputFolder, testConfig, envConfig.iterations)
       (testConfig, results)
     }
 
-    def heading(title: String) {
-      println(f"-----\n$title\n${"RunName"}%25s\t${"AllWallMS"}%25s\t${"CPU_MS"}%25s\t${"Allocated"}%25s")
-    }
+    TextRenderer.outputTextResults(envConfig, results)
+    HtmlRenderer.outputHtmlResults(outputFolder,envConfig, results)
 
-    heading("ALL")
-    results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.all)
-    }
 
-    if(envConfig.iterations > 10) {
-      (10 until(envConfig.iterations, 10)) foreach { i =>
-        println("\n---------------------------------------------------------------------------------------------------")
-        println("---------------------------------------------------------------------------------------------------")
-        heading(s"after $i 90%")
-        results.foreach { case (config, configResult) =>
-          printAggResults(config, configResult.filterIteration(i, 10000).std)
-        }
-
-        val phases: mutable.LinkedHashSet[String] = results.flatMap(r => r._2.phases)(scala.collection.breakOut)
-
-        for (phase <- phases) {
-          heading(s"after $i 90%, phase $phase")
-          for {(config, configResult) <- results} {
-            printAggResults(config, configResult.filterIteration(i, 10000).filterPhases(phase).std)
-          }
-        }
-      }
-    }
   }
 
   private val lastBuiltScalac = mutable.Map[Path, String]()
 
-  def executeRuns(envConfig: EnvironmentConfig, testConfig: TestConfig, repeat: Int): RunResult = {
+  def executeRuns(
+    envConfig: EnvironmentConfig,
+    outputFolder: Path,
+    testConfig: TestConfig,
+    repeat: Int
+  ): RunResult = {
     val (dir: Path, reused) = testConfig match {
       case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
@@ -114,7 +100,8 @@ object ProfileMain {
 
         (sourceDir, reuse)
     }
-    val profileOutputFile = envConfig.outputDir / s"run_${testConfig.id}.csv"
+
+    val profileOutputFile = outputFolder / s"run_${testConfig.id}.csv"
 
     val exists = Files.exists(profileOutputFile.toNIO)
 
@@ -135,6 +122,7 @@ object ProfileMain {
         buildScalaC(testConfig.buildDefn, dir)
       executeTest(envConfig, testConfig, profileOutputFile, repeat)
     }
+
     ResultReader.readResults(testConfig, profileOutputFile, repeat)
   }
 
@@ -145,9 +133,15 @@ object ProfileMain {
         %%("git", "reset", "--hard", hash)(dir)
       case _ =>
     }
+
+    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    println("BUILD DISABLED")
+    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
     //can we get run of runsbt?
     //runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
-    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
+//    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
   }
   def buildDir(path :Path) = path  / "build" / "pack"
 

@@ -9,6 +9,7 @@ import SBTBot.{ExecuteTask, SBTBotReady, TaskResult}
 object SBTBotMain {
 
   def main(args: Array[String]): Unit = {
+    println("HERE")
     implicit val actorSystem: ActorSystem = ActorSystem("test")
     import ammonite.ops._
 

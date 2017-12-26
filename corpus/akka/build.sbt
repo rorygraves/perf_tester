@@ -5,6 +5,8 @@ initialize := {
   loadSystemProperties("project/akka-build.properties")
   initialize.value
 }
+serverConnectionType := ConnectionType.Tcp
+serverAuthentication := Set(ServerAuthentication.Token)
 
 akka.AkkaBuild.buildSettings
 

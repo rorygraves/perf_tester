@@ -1,11 +1,13 @@
 package org.perftester.sbtbot
 
 import java.io.File
+import java.net.{InetAddress, InetSocketAddress}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
-import ammonite.ops.{Path, write}
+import ammonite.ops.{Path, read, write}
 import org.perftester.sbtbot.SBTBot._
 import org.perftester.sbtbot.process._
+import play.api.libs.json.Json
 
 object SBTBot {
 
@@ -48,11 +50,11 @@ class SBTBot private (workspaceRootDir: Path,
   }
   private val execCommandArgs: List[String] = sbtCommandLine(jvmArgs) :::
     List(
-      "-Dsbt.log.noformat=true",
-      s"""set shellPrompt := ( _ =>  "$promptStr" + System.getProperty("line.separator")) """) :::
-    sbtArgs ::: List("shell")// map escape
+      "-Dsbt.log.noformat=true"/*,
+      s"""set shellPrompt := ( _ =>  \"$promptStr\n\")"""*/) :::
+    sbtArgs ::: List("shell") map escape
 
-  def escape(s:String) = s.replace("\\", "\\\\").replace("\"", "\"\"")
+  def escape(s:String) = s//.replace("\\", "\\\\").replace("\"", "\"\"")
 
   private var sbtProcess: ActorRef = _
   private val execCommand = ProcessCommand(execCommandArgs).withWorkingDir(workspaceRootDir)
@@ -77,10 +79,25 @@ class SBTBot private (workspaceRootDir: Path,
     case ProcessIO(source, content) =>
       log.info(s"SBTBOT:${source.shortName}: $content")
       if (content == promptStr) {
-        context.parent ! SBTBotReady
-        context.become(idleReceive, discardOld = true)
+        connectToServer()
       }
     case x => log.info("Don't know what to do with {}", x)
+  }
+
+  def connectToServer(): Unit = {
+    val activeJsonContests = read! workspaceRootDir / "project" / "target" / "active.json"
+    val activeJson = Json.parse(activeJsonContests)
+    val strValue = (activeJson \ "tokenFilePath").get
+    println("STRVALUE = " + strValue)
+    context.become(serverConnectReceive)
+
+  }
+
+  def serverConnectReceive: Receive = {
+    case _ =>
+      println("AAAGGGGHHHH")
+//    context.parent ! SBTBotReady
+//    context.become(idleReceive, discardOld = true)
   }
 
   def sendToSBT(c: SBTCommand): Unit = {
@@ -129,7 +146,7 @@ class SBTBot private (workspaceRootDir: Path,
 
   def checkActiveComplete(): Unit = {
     if (seenIOTotalTime && seenComplete) {
-      log.info(s"Tast $currentTaskId complete")
+      log.info(s"Task $currentTaskId complete")
       requestor.foreach(_ ! TaskResult(currentTaskId, io))
       currentTaskId = "UNKNOWN"
       requestor = None

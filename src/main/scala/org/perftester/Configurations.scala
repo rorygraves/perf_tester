@@ -25,7 +25,7 @@ object Configurations {
 
 
     "mikeLatest" -> List(
-//      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
+      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
       //            TestConfig(s"00_backend-0S-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
       //              "-YaddBackendThreads", "0",
       //              "-YIoWriterThreads", "0",

@@ -1,6 +1,7 @@
 package org.perftester.sbtbot
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.io.{IO, Tcp}
 import akka.testkit.TestProbe
 import ammonite.ops.Path
 import org.perftester.sbtbot.SBTBot.{ExecuteTask, SBTBotReady, TaskResult}
@@ -16,6 +17,8 @@ object SBTBotTestRunner {
     */
   def run(testDir: Path, programArgs: List[String], jvmArgs: List[String], repeats: Int, commands: List[String]): Unit = {
     implicit val actorSystem: ActorSystem = ActorSystem("test")
+
+    val manager = IO(Tcp)
 
     val proxy = TestProbe()
     val parent = actorSystem.actorOf(Props(new Actor {
@@ -37,7 +40,7 @@ object SBTBotTestRunner {
       for(i <- 1 until repeats) {
         implicit val sender: ActorRef = proxy.ref
         commands.zipWithIndex foreach { case (cmd, idx) =>
-          println(s"--------------- $cmd -------------------------------")
+          println(s"--------------- $cmd - iteration  $i/$repeats -------------------------------")
           parent ! ExecuteTask(s"$idx", cmd)
           proxy.expectMsgClass(120.seconds, classOf[TaskResult])
           Thread.sleep(3000)
