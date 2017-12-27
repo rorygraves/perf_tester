@@ -4,6 +4,10 @@ version := "0.1"
 
 scalaVersion := "2.12.4"
 
+resolvers += Resolver.bintrayRepo("dhpcs", "maven")
+
+libraryDependencies += "com.dhpcs" %% "scala-json-rpc" % "2.0.1"
+
 libraryDependencies += "org.apache.commons" % "commons-math" % "2.2"
 libraryDependencies += "com.github.scopt" %% "scopt" % "3.5.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.5.6"

@@ -8,6 +8,7 @@ import akka.io.Tcp._
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
 import ammonite.ops.{Path, read}
+import org.perftester.ProfileMain
 import org.perftester.sbtbot.SBTBot._
 import org.perftester.sbtbot.process._
 import play.api.libs.json.Json
@@ -60,7 +61,7 @@ class SBTBot private (workspaceRootDir: Path,
       s"""set shellPrompt := ( _ =>  \"$promptStr\n\")"""*/) :::
     sbtArgs ::: List(s"""set shellPrompt := ( _ =>  "$promptStr" + System.getProperty("line.separator"))""", "shell") map escape
 
-  def escape(s:String): String = s//.replace("\\", "\\\\").replace("\"", "\"\"")
+  def escape(s:String): String = if(ProfileMain.isWindows) s.replace("\\", "\\\\").replace("\"", "\"\"") else s
 
   private var sbtProcess: ActorRef = _
   private val execCommand = ProcessCommand(execCommandArgs).withWorkingDir(workspaceRootDir)
@@ -82,7 +83,7 @@ class SBTBot private (workspaceRootDir: Path,
       context.parent ! SBTExited(exitCode)
     case ProcessIO(source, content) =>
       log.info(s"SBTBOT:${source.shortName}: $content")
-      if (content == promptStr) {
+      if (content.contains(promptStr)) {
         connectToServer()
       }
     case x => log.info("Don't know what to do with {}", x)
