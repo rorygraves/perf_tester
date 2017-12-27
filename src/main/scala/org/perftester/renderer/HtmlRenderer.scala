@@ -57,7 +57,7 @@ object HtmlRenderer {
     )
 
     val path = outputFolder / "index.html"
-    write(path, content.toString())
+    write.over(path, content.toString())
 
     println(s"open $path")
   }

@@ -43,7 +43,7 @@ object SBTBotTestRunner {
           println(s"--------------- $cmd - iteration  $i/$repeats -------------------------------")
           parent ! ExecuteTask(s"$idx", cmd)
           proxy.expectMsgClass(120.seconds, classOf[TaskResult])
-          Thread.sleep(3000)
+          Thread.sleep(5000)
         }
       }
 
