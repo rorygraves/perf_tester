@@ -3,15 +3,18 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, Path}
+import ammonite.ops.{%%, Path, ShelloutException}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
 
 object ProfileMain {
+
+  val log: Logger = LoggerFactory.getLogger("ProfileMain")
 
   def main(args: Array[String]): Unit = {
     // parser.parse returns Option[C]
@@ -30,9 +33,9 @@ object ProfileMain {
     val allWallClockTimeAvg = results.allWallClockMS
     val allCpuTimeAvg = results.allCPUTime
     val allAllocatedBytes = results.allAllocated
-    val allWallMsStr = allWallClockTimeAvg.formatted(6,2)
-    val allCpuMsStr = allCpuTimeAvg.formatted(6,2)
-    val allAllocatedBytesStr = allAllocatedBytes.formatted(6,2)
+    val allWallMsStr = allWallClockTimeAvg.formatted(6, 2)
+    val allCpuMsStr = allCpuTimeAvg.formatted(6, 2)
+    val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
     val size = results.size.toInt
     println("%25s\t%4s\t%25s\t%25s\t%25s".format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
 
@@ -55,19 +58,17 @@ object ProfileMain {
     }
 
     TextRenderer.outputTextResults(envConfig, results)
-    HtmlRenderer.outputHtmlResults(outputFolder,envConfig, results)
-
-
+    HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
   }
 
   private val lastBuiltScalac = mutable.Map[Path, String]()
 
   def executeRuns(
-    envConfig: EnvironmentConfig,
-    outputFolder: Path,
-    testConfig: TestConfig,
-    repeat: Int
-  ): RunResult = {
+                   envConfig: EnvironmentConfig,
+                   outputFolder: Path,
+                   testConfig: TestConfig,
+                   repeat: Int
+                 ): RunResult = {
     val (dir: Path, reused) = testConfig match {
       case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
@@ -77,22 +78,22 @@ object ProfileMain {
       case TestConfig(_, BuildFromDir(sourceDir, _, rebuild), _, _) =>
         val reuse = {
           if (lastBuiltScalac.contains(sourceDir)) {
-            println (s"dir reused - already used")
+            println(s"dir reused - already used")
             true
           } else {
             val targetBuild = buildDir(sourceDir)
             if (!Files.exists(targetBuild.toNIO)) {
-              println (s"dir NOT reused - no build dir")
+              println(s"dir NOT reused - no build dir")
               false
             } else if (rebuild) {
-              println (s"dir NOT reused - as rebuild requested")
+              println(s"dir NOT reused - as rebuild requested")
               false
             } else {
               val sourceDT = Utils.lastChangedDate(sourceDir / "src")
               val buildDT = Utils.lastChangedDate(targetBuild)
-              println (s"latest file times \nsource $sourceDT\nbuild  $buildDT")
+              println(s"latest file times \nsource $sourceDT\nbuild  $buildDT")
               val reuse = sourceDT._1.isBefore(buildDT._1)
-                println (s"dir reused = $reuse - based on file times")
+              println(s"dir reused = $reuse - based on file times")
               reuse
             }
           }
@@ -126,36 +127,49 @@ object ProfileMain {
     ResultReader.readResults(testConfig, profileOutputFile, repeat)
   }
 
-  def buildScalaC(buildDefn:BuildType, dir: Path): Unit = {
+  def buildScalaC(buildDefn: BuildType, dir: Path): Unit = {
     buildDefn match {
       case BuildFromGit(hash, _) =>
-        %%("git", "fetch")(dir)
-        %%("git", "reset", "--hard", hash)(dir)
-      case _ =>
+        try {
+          log.info(s"Running: git fetch    (in $dir)")
+          %%("git", "fetch")(dir)
+          log.info(s"Running: git reset --hard $hash    (in $dir)")
+          %%("git", "reset", "--hard", hash)(dir)
+        } catch {
+          case t: ShelloutException =>
+            if (t.result.err.string.contains("fatal: Could not parse object") ||
+              t.result.out.string.contains("fatal: Could not parse object"))
+              log.error(s"Failed to fetch and build hash $hash - '" + " cannot resolve hash")
+            log.error(s"Failed to execute git fetch/reset to $hash", t)
+        }
+      case bfd: BuildFromDir =>
+        log.info("BuildFromDir selected - build skipped")
     }
 
-    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    println("BUILD DISABLED")
-    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //can we get run of runsbt?
-//    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
-//    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
+    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    //    log.info("BUILD DISABLED")
+    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    //    can we get run of runsbt?
+    log.info(s"Building compiler in $dir")
+    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
+    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
   }
-  def buildDir(path :Path) = path  / "build" / "pack"
 
-  def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile:Path, repeats: Int): Unit = {
+  def buildDir(path: Path) = path / "build" / "pack"
+
+  def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile: Path, repeats: Int): Unit = {
     val mkPackPath = testConfig.buildDefn match {
-      case BuildFromDir(dir,_, _) => buildDir(dir)
-      case BuildFromGit(_,_) => buildDir(envConfig.checkoutDir)
+      case BuildFromDir(dir, _, _) => buildDir(dir)
+      case BuildFromGit(_, _) => buildDir(envConfig.checkoutDir)
     }
     println("Logging stats to " + profileOutputFile)
     if (Files.exists(profileOutputFile.toNIO))
       Files.delete(profileOutputFile.toNIO)
     val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
 
-    val debugArgs=if (envConfig.runWithDebug)
+    val debugArgs = if (envConfig.runWithDebug)
       "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil else Nil
 
     val programArgs = List(s"++2.12.3=$mkPackPath",
@@ -166,11 +180,10 @@ object ProfileMain {
     SBTBotTestRunner.run(envConfig.testDir, programArgs, jvmArgs, repeats, List("clean", "akka-actor/compile"))
   }
 
-
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
     val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
-    require(sbt.exists(),"sbt-launch.jar must exist in sbtlib directory")
-    List("java","-Dfile.encoding=UTF8", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+    require(sbt.exists(), "sbt-launch.jar must exist in sbtlib directory")
+    List("java", "-Dfile.encoding=UTF8", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
   def runSbt(command: List[String], dir: Path, extraJVMArgs: List[String]): Unit = {
@@ -196,5 +209,4 @@ object ProfileMain {
     val commits = res.out.lines.toList.reverse
     commits
   }
-
 }
