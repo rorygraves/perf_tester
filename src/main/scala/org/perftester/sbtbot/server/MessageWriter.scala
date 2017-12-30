@@ -52,7 +52,8 @@ class MessageWriter {
     * Write a message to the output stream. This method can be called from multiple threads,
     * but it may block waiting for other threads to finish writing.
     */
-  def writeByteString[T](msg: T, h: Map[String, String] = Map.empty)(implicit o: Format[T]): ByteString = lock.synchronized {
+  def writeByteString[T](msg: T, h: Map[String, String] = Map.empty)(
+      implicit o: Format[T]): ByteString = lock.synchronized {
     require(h.get(ContentLen).isEmpty)
 
     //    val str = Json.stringify(o.writes(msg)) + "\r\n"
@@ -69,7 +70,8 @@ class MessageWriter {
 
     //    val headerBytes = headers.getBytes(MessageReader.AsciiCharset)
 
-    /*ByteString(headerBytes) ++ */ ByteString(contentBytes)
+    /*ByteString(headerBytes) ++ */
+    ByteString(contentBytes)
   }
 
 }

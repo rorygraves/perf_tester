@@ -10,8 +10,9 @@ import org.perftester.results.RunResult
 import scalatags.Text.all._
 
 object HtmlRenderer {
-  def outputHtmlResults(outputFolder: Path, envConfig: EnvironmentConfig, results: Seq[(TestConfig, RunResult)]): Unit = {
-
+  def outputHtmlResults(outputFolder: Path,
+                        envConfig: EnvironmentConfig,
+                        results: Seq[(TestConfig, RunResult)]): Unit = {
 
     val content = html(
       head(
@@ -43,7 +44,6 @@ object HtmlRenderer {
             |      }
             |    </script>
           """.stripMargin
-
         )
       ),
       body(

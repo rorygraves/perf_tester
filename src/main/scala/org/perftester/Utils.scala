@@ -8,11 +8,12 @@ import java.util
 import ammonite.ops.{Path => aPath}
 
 object Utils {
-  def lastChangedDate(path: aPath): (Instant, String) = lastChangedDate(path.toNIO)
+  def lastChangedDate(path: aPath): (Instant, String) =
+    lastChangedDate(path.toNIO)
 
   def lastChangedDate(path: Path): (Instant, String) = {
     var latest = Files.getLastModifiedTime(path)
-    var at = path.toString
+    var at     = path.toString
 
     object walker extends SimpleFileVisitor[Path] {
       override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {

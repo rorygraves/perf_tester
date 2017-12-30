@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 import SBTBot.{ExecuteTask, SBTBotReady, TaskResult}
 
-
 // Test class for SBTBot
 object SBTBotMain {
 
@@ -14,11 +13,15 @@ object SBTBotMain {
 
     val proxy = TestProbe()
     val parent = actorSystem.actorOf(Props(new Actor {
-      val child: ActorRef = context.actorOf(SBTBot.props(root / "workspace" / "perf_tester" / "corpus" / "akka", List.empty, List.empty), "sbtbot")
+      val child: ActorRef =
+        context.actorOf(SBTBot.props(root / "workspace" / "perf_tester" / "corpus" / "akka",
+                                     List.empty,
+                                     List.empty),
+                        "sbtbot")
 
       def receive: Receive = {
         case x if sender == child => proxy.ref forward x
-        case x => child forward x
+        case x                    => child forward x
       }
     }))
 
@@ -38,7 +41,6 @@ object SBTBotMain {
       println("---------------compile--------------------------------")
       parent ! ExecuteTask("2", "compile")
       proxy.expectMsgClass(60.seconds, classOf[TaskResult])
-
 
       println("---------------Finished --------------------------------")
       println("Finished")

@@ -24,13 +24,13 @@ object ProcessExecutor {
   *
   * @param command The command to execute
   */
-class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorLogging {
+class ProcessExecutor private (command: ProcessCommand) extends Actor with ActorLogging {
 
-  implicit val ec: ExecutionContext = context.system.dispatcher
-  private var process: Option[Process] = None
+  implicit val ec: ExecutionContext                    = context.system.dispatcher
+  private var process: Option[Process]                 = None
   private var outReader: Option[InputStreamLineReader] = None
   private var errReader: Option[InputStreamLineReader] = None
-  private var inWriter: Option[PrintWriter] = None
+  private var inWriter: Option[PrintWriter]            = None
 
   var timer: Option[Cancellable] = None
 
@@ -41,8 +41,8 @@ class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorL
   }
 
   var processTerminated = false
-  var outTerminated = false
-  var errTerminated = false
+  var outTerminated     = false
+  var errTerminated     = false
 
   private def processIOStream(isr: Option[InputStreamLineReader], ioSource: IOSource): Unit = {
     isr.foreach { r =>
@@ -99,8 +99,12 @@ class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorL
 
   override def postStop(): Unit = {
     log.info("postStop")
-    outReader.foreach { s => Try(s.close()) }
-    errReader.foreach { s => Try(s.close()) }
+    outReader.foreach { s =>
+      Try(s.close())
+    }
+    errReader.foreach { s =>
+      Try(s.close())
+    }
     process.foreach {
       _.destroyForcibly()
     }
@@ -111,7 +115,9 @@ class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorL
     log.info("Starting process " + command)
 
     val builder = new java.lang.ProcessBuilder()
-    builder.environment().putAll(collection.JavaConverters.mapAsJavaMap(command.envArgs))
+    builder
+      .environment()
+      .putAll(collection.JavaConverters.mapAsJavaMap(command.envArgs))
 
     // set working dir if defined
     command.workingDir.foreach { wd =>
@@ -126,6 +132,8 @@ class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorL
     inWriter = Some(new PrintWriter(process.getOutputStream))
     log.info("Process started successfully")
     import scala.concurrent.duration._
-    timer = Some(context.system.scheduler.schedule(250.millis, 200.millis, context.self, CheckStatus))
+    timer = Some(
+      context.system.scheduler
+        .schedule(250.millis, 200.millis, context.self, CheckStatus))
   }
 }

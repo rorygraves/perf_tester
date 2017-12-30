@@ -1,6 +1,7 @@
 package org.perftester.sbtbot.server
 
 object MessageType {
+
   /** An error message. */
   final val Error = 1
 
@@ -13,4 +14,3 @@ object MessageType {
   /** A log message. */
   final val Log = 4
 }
-

@@ -8,23 +8,24 @@ import scala.util.Try
 
 class InputStreamLineReader(inputStream: InputStream, name: String) {
   var bs: ByteString = ByteString()
-  val bis = new BufferedInputStream(inputStream)
+  val bis            = new BufferedInputStream(inputStream)
 
-  var limit = 2048
+  var limit      = 2048
   val byteBuffer = new Array[Byte](limit)
 
   var isClosed = false
 
   def close(): Option[String] = {
-    val res = if (isClosed)
-      None
-    else {
-      val remainingOutput = bs.decodeString("UTF-8")
-      if (remainingOutput.length > 0)
-        Some(remainingOutput)
-      else
+    val res =
+      if (isClosed)
         None
-    }
+      else {
+        val remainingOutput = bs.decodeString("UTF-8")
+        if (remainingOutput.length > 0)
+          Some(remainingOutput)
+        else
+          None
+      }
 
     bs = ByteString.empty
     res
@@ -41,10 +42,11 @@ class InputStreamLineReader(inputStream: InputStream, name: String) {
 
   @tailrec
   private final def performRead(cur: List[String]): List[String] = {
-    val actualRead = if (bis.available > 0)
-      bis.read(byteBuffer)
-    else
-      0
+    val actualRead =
+      if (bis.available > 0)
+        bis.read(byteBuffer)
+      else
+        0
     if (actualRead == -1) {
       Try(inputStream.close())
       isClosed = true
@@ -58,7 +60,7 @@ class InputStreamLineReader(inputStream: InputStream, name: String) {
       bs ++= byteString
 
       var activeCurrent = cur
-      var offset = bs.indexWhere(_ == '\n')
+      var offset        = bs.indexWhere(_ == '\n')
       while (offset != -1) {
         val (init, rem) = bs.splitAt(offset)
 

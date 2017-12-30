@@ -7,30 +7,37 @@ import org.perftester.results.RunResult
 import scala.collection.mutable
 
 object TextRenderer {
-  def outputTextResults(envConfig: EnvironmentConfig, results: Seq[(TestConfig, RunResult)]): Unit = {
+  def outputTextResults(envConfig: EnvironmentConfig,
+                        results: Seq[(TestConfig, RunResult)]): Unit = {
     def heading(title: String) {
-      println(f"-----\n$title\n${"Run Name"}%25s\t${"AllWall(ms)"}%25s\t${"CPU(ms)"}%25s\t${"Allocated(MBs)"}%25s")
+      println(
+        f"-----\n$title\n${"Run Name"}%25s\t${"AllWall(ms)"}%25s\t${"CPU(ms)"}%25s\t${"Allocated(MBs)"}%25s")
     }
 
     heading("ALL")
-    results.foreach { case (config, configResult) =>
-      printAggResults(config, configResult.all)
+    results.foreach {
+      case (config, configResult) =>
+        printAggResults(config, configResult.all)
     }
 
     if (envConfig.iterations > 10) {
-      (10 until(envConfig.iterations, 10)) foreach { i =>
-        println("\n---------------------------------------------------------------------------------------------------")
-        println("---------------------------------------------------------------------------------------------------")
+      (10 until (envConfig.iterations, 10)) foreach { i =>
+        println(
+          "\n---------------------------------------------------------------------------------------------------")
+        println(
+          "---------------------------------------------------------------------------------------------------")
         heading(s"after $i 90%")
-        results.foreach { case (config, configResult) =>
-          printAggResults(config, configResult.filterIteration(i, 10000).std)
+        results.foreach {
+          case (config, configResult) =>
+            printAggResults(config, configResult.filterIteration(i, 10000).std)
         }
 
-        val phases: mutable.LinkedHashSet[String] = results.flatMap(r => r._2.phases)(scala.collection.breakOut)
+        val phases: mutable.LinkedHashSet[String] =
+          results.flatMap(r => r._2.phases)(scala.collection.breakOut)
 
         for (phase <- phases) {
           heading(s"after $i 90%, phase $phase")
-          for {(config, configResult) <- results} {
+          for { (config, configResult) <- results } {
             printAggResults(config, configResult.filterIteration(i, 10000).filterPhases(phase).std)
           }
         }

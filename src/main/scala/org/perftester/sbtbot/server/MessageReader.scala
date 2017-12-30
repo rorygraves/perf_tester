@@ -59,14 +59,14 @@ class MessageReader(in: InputStream) {
     */
   private final def getHeaders(): Map[String, String] = lock.synchronized {
     val EmptyPair = "" -> ""
-    val EmptyMap = Map.empty[String, String]
+    val EmptyMap  = Map.empty[String, String]
 
     def atDelimiter(idx: Int): Boolean = {
       (data.size >= idx + 4
-        && data(idx) == '\r'
-        && data(idx + 1) == '\n'
-        && data(idx + 2) == '\r'
-        && data(idx + 3) == '\n')
+      && data(idx) == '\r'
+      && data(idx + 1) == '\n'
+      && data(idx + 2) == '\r'
+      && data(idx + 3) == '\n')
     }
 
     while (data.size < 4 && !streamClosed) lock.wait()
@@ -79,7 +79,8 @@ class MessageReader(in: InputStream) {
     }
 
     if (atDelimiter(i)) {
-      val headers = new String(data.slice(0, i).toArray, MessageReader.AsciiCharset)
+      val headers =
+        new String(data.slice(0, i).toArray, MessageReader.AsciiCharset)
       println(s"Received headers:\n$headers")
 
       val pairs = headers.split("\r\n").filter(_.trim.length() > 0) map { line =>
@@ -127,33 +128,36 @@ class MessageReader(in: InputStream) {
   /**
     * Return the next JSON RPC content payload. Blocks until enough data has been received.
     */
-  def nextPayload(): Option[String] = if (streamClosed) None else {
-    // blocks until headers are available
-    val headers = getHeaders()
-
-    if (headers.isEmpty && streamClosed)
-      None
+  def nextPayload(): Option[String] =
+    if (streamClosed) None
     else {
-      val length = headers.get("Content-Length") match {
-        case Some(len) => try len.toInt catch {
-          case e: NumberFormatException => -1
-        }
-        case _ => -1
-      }
+      // blocks until headers are available
+      val headers = getHeaders()
 
-      if (length > 0) {
-        val content = getContent(length)
-        if (content.isEmpty() && streamClosed) None else Some(content)
-      } else {
-        println("Input must have Content-Length header with a numeric value.")
-        nextPayload()
+      if (headers.isEmpty && streamClosed)
+        None
+      else {
+        val length = headers.get("Content-Length") match {
+          case Some(len) =>
+            try len.toInt
+            catch {
+              case e: NumberFormatException => -1
+            }
+          case _ => -1
+        }
+
+        if (length > 0) {
+          val content = getContent(length)
+          if (content.isEmpty() && streamClosed) None else Some(content)
+        } else {
+          println("Input must have Content-Length header with a numeric value.")
+          nextPayload()
+        }
       }
     }
-  }
 }
 
 object MessageReader {
   val AsciiCharset = Charset.forName("ASCII")
-  val Utf8Charset = Charset.forName("UTF-8")
+  val Utf8Charset  = Charset.forName("UTF-8")
 }
-

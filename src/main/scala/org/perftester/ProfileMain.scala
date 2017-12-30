@@ -11,7 +11,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-
 object ProfileMain {
 
   val log: Logger = LoggerFactory.getLogger("ProfileMain")
@@ -30,14 +29,16 @@ object ProfileMain {
   val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
   def printAggResults(testConfig: TestConfig, results: RunResult#Detail): Unit = {
-    val allWallClockTimeAvg = results.allWallClockMS
-    val allCpuTimeAvg = results.allCPUTime
-    val allAllocatedBytes = results.allAllocated
-    val allWallMsStr = allWallClockTimeAvg.formatted(6, 2)
-    val allCpuMsStr = allCpuTimeAvg.formatted(6, 2)
+    val allWallClockTimeAvg  = results.allWallClockMS
+    val allCpuTimeAvg        = results.allCPUTime
+    val allAllocatedBytes    = results.allAllocated
+    val allWallMsStr         = allWallClockTimeAvg.formatted(6, 2)
+    val allCpuMsStr          = allCpuTimeAvg.formatted(6, 2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
-    val size = results.size.toInt
-    println("%25s\t%4s\t%25s\t%25s\t%25s".format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
+    val size                 = results.size.toInt
+    println(
+      "%25s\t%4s\t%25s\t%25s\t%25s"
+        .format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
 
   }
 
@@ -46,14 +47,17 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val commitsWithId = Configurations.configurations.getOrElse(envConfig.config, throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
+    val commitsWithId = Configurations.configurations.getOrElse(
+      envConfig.config,
+      throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
 
     val outputFolder = envConfig.outputDir / envConfig.username / envConfig.config
     Files.createDirectories(outputFolder.toNIO)
     println("Output logging to " + outputFolder)
 
     val results = commitsWithId map { testConfig =>
-      val results = executeRuns(envConfig, outputFolder, testConfig, envConfig.iterations)
+      val results =
+        executeRuns(envConfig, outputFolder, testConfig, envConfig.iterations)
       (testConfig, results)
     }
 
@@ -64,18 +68,18 @@ object ProfileMain {
   private val lastBuiltScalac = mutable.Map[Path, String]()
 
   def executeRuns(
-                   envConfig: EnvironmentConfig,
-                   outputFolder: Path,
-                   testConfig: TestConfig,
-                   repeat: Int
-                 ): RunResult = {
+      envConfig: EnvironmentConfig,
+      outputFolder: Path,
+      testConfig: TestConfig,
+      repeat: Int
+  ): RunResult = {
     val (dir: Path, reused) = testConfig match {
       case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
-        val reused = lastBuiltScalac.get(targetDir).contains(sha)
+        val reused    = lastBuiltScalac.get(targetDir).contains(sha)
         lastBuiltScalac(targetDir) = sha
         (targetDir, reused)
-      case TestConfig(_, bfd@BuildFromDir(_, _, rebuild), _, _) =>
+      case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _) =>
         val sourceDir = bfd.path
         val reuse = {
           if (lastBuiltScalac.contains(sourceDir)) {
@@ -91,7 +95,7 @@ object ProfileMain {
               false
             } else {
               val sourceDT = Utils.lastChangedDate(sourceDir / "src")
-              val buildDT = Utils.lastChangedDate(targetBuild)
+              val buildDT  = Utils.lastChangedDate(targetBuild)
               println(s"latest file times \nsource $sourceDT\nbuild  $buildDT")
               val reuse = sourceDT._1.isBefore(buildDT._1)
               println(s"dir reused = $reuse - based on file times")
@@ -107,7 +111,7 @@ object ProfileMain {
 
     val exists = Files.exists(profileOutputFile.toNIO)
 
-    val runTest = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
+    val runTest   = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
     val runScalac = !envConfig.analyseOnly && runTest && !reused
     val action = {
       if (runTest && runScalac) "compile and test"
@@ -115,9 +119,11 @@ object ProfileMain {
       else "skip"
     }
 
-    println("\n\n******************************************************************************************************")
+    println(
+      "\n\n******************************************************************************************************")
     println(s"EXECUTING RUN ${testConfig.id} - ${testConfig.buildDefn}      $action")
-    println("******************************************************************************************************\n\n")
+    println(
+      "******************************************************************************************************\n\n")
 
     if (runTest) {
       if (!reused)
@@ -139,7 +145,7 @@ object ProfileMain {
         } catch {
           case t: ShelloutException =>
             if (t.result.err.string.contains("fatal: Could not parse object") ||
-              t.result.out.string.contains("fatal: Could not parse object"))
+                t.result.out.string.contains("fatal: Could not parse object"))
               log.error(s"Failed to fetch and build hash $hash - '" + " cannot resolve hash")
             log.error(s"Failed to execute git fetch/reset to $hash", t)
         }
@@ -160,38 +166,56 @@ object ProfileMain {
 
   def buildDir(path: Path): Path = path / "build" / "pack"
 
-  def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile: Path, repeats: Int): Unit = {
+  def executeTest(envConfig: EnvironmentConfig,
+                  testConfig: TestConfig,
+                  profileOutputFile: Path,
+                  repeats: Int): Unit = {
     val mkPackPath = testConfig.buildDefn match {
-      case bfd: BuildFromDir => buildDir(bfd.path)
+      case bfd: BuildFromDir  => buildDir(bfd.path)
       case BuildFromGit(_, _) => buildDir(envConfig.checkoutDir)
     }
     log.info("Logging stats to " + profileOutputFile)
     if (Files.exists(profileOutputFile.toNIO))
       Files.delete(profileOutputFile.toNIO)
-    val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
+    val extraArgsStr =
+      if (testConfig.extraArgs.nonEmpty)
+        testConfig.extraArgs.mkString("\"", "\",\"", "\",")
+      else ""
 
-    val debugArgs = if (envConfig.runWithDebug)
-      "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil else Nil
+    val debugArgs =
+      if (envConfig.runWithDebug)
+        "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil
+      else Nil
 
-    val programArgs = List(s"++2.12.3=$mkPackPath",
+    val programArgs = List(
+      s"++2.12.3=$mkPackPath",
       s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""")
 
-
     val jvmArgs = debugArgs ::: testConfig.extraJVMArgs
-    SBTBotTestRunner.run(envConfig.testDir, programArgs, jvmArgs, repeats, List("clean", "akka-actor/compile"))
+    SBTBotTestRunner.run(envConfig.testDir,
+                         programArgs,
+                         jvmArgs,
+                         repeats,
+                         List("clean", "akka-actor/compile"))
   }
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
     val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
     require(sbt.exists(), "sbt-launch.jar must exist in sbtlib directory")
-    List("java", "-Dfile.encoding=UTF8", "-Xmx12G", "-XX:MaxPermSize=256m", "-XX:ReservedCodeCacheSize=128m", "-Dsbt.log.format=true", "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+    List("java",
+         "-Dfile.encoding=UTF8",
+         "-Xmx12G",
+         "-XX:MaxPermSize=256m",
+         "-XX:ReservedCodeCacheSize=128m",
+         "-Dsbt.log.format=true",
+         "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
   def runSbt(command: List[String], dir: Path, extraJVMArgs: List[String]): Unit = {
     import collection.JavaConverters._
 
-    val escaped = if (isWindows) command map {
-      s => s.replace("\\", "\\\\").replace("\"", "\\\"")
+    val escaped = if (isWindows) command map { s =>
+      s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else command
 
     val fullCommand = sbtCommandLine(extraJVMArgs) ::: escaped

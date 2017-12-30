@@ -1,6 +1,7 @@
 package org.perftester.sbtbot.server
 
 object TextDocumentSyncKind {
+
   /**
     * Documents should not be synced at all.
     */
@@ -19,4 +20,3 @@ object TextDocumentSyncKind {
     */
   final val Incremental = 2
 }
-
