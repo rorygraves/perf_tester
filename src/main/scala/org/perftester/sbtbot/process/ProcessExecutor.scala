@@ -12,15 +12,19 @@ object ProcessExecutor {
   def props(command: ProcessCommand): Props = {
     Props(new ProcessExecutor(command))
   }
+
   case object CheckStatus
+
   case class Send(s: String)
+
 }
 
 /**
   * Execute a command forwarding all relevant events to the watcher (io/termination etc)
+  *
   * @param command The command to execute
   */
-class ProcessExecutor private (command: ProcessCommand) extends Actor with ActorLogging {
+class ProcessExecutor private(command: ProcessCommand) extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContext = context.system.dispatcher
   private var process: Option[Process] = None
@@ -78,6 +82,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
         log.error("Illegal state, should not be in check without process")
     }
   }
+
   override def receive: Receive = {
     case CheckStatus =>
       check()
@@ -96,7 +101,9 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     log.info("postStop")
     outReader.foreach { s => Try(s.close()) }
     errReader.foreach { s => Try(s.close()) }
-    process.foreach { _.destroyForcibly() }
+    process.foreach {
+      _.destroyForcibly()
+    }
     timer.foreach(_.cancel())
   }
 

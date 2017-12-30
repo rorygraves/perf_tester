@@ -1,19 +1,16 @@
 package org.perftester
 
-import java.io.IOException
 import java.nio.file._
-import java.nio.file.attribute.{BasicFileAttributes, FileTime}
+import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util
 
 import ammonite.ops.{Path => aPath}
 
-/**
-  * Created by dev on 05/06/2017.
-  */
 object Utils {
-  def lastChangedDate(path:aPath): (Instant, String) = lastChangedDate(path.toNIO)
-  def lastChangedDate(path:Path): (Instant, String) = {
+  def lastChangedDate(path: aPath): (Instant, String) = lastChangedDate(path.toNIO)
+
+  def lastChangedDate(path: Path): (Instant, String) = {
     var latest = Files.getLastModifiedTime(path)
     var at = path.toString
 

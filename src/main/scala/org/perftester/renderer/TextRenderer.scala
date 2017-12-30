@@ -9,7 +9,7 @@ import scala.collection.mutable
 object TextRenderer {
   def outputTextResults(envConfig: EnvironmentConfig, results: Seq[(TestConfig, RunResult)]): Unit = {
     def heading(title: String) {
-      println(f"-----\n$title\n${"RunName"}%25s\t${"AllWallMS"}%25s\t${"CPU_MS"}%25s\t${"Allocated"}%25s")
+      println(f"-----\n$title\n${"Run Name"}%25s\t${"AllWall(ms)"}%25s\t${"CPU(ms)"}%25s\t${"Allocated(MBs)"}%25s")
     }
 
     heading("ALL")
@@ -17,7 +17,7 @@ object TextRenderer {
       printAggResults(config, configResult.all)
     }
 
-    if(envConfig.iterations > 10) {
+    if (envConfig.iterations > 10) {
       (10 until(envConfig.iterations, 10)) foreach { i =>
         println("\n---------------------------------------------------------------------------------------------------")
         println("---------------------------------------------------------------------------------------------------")

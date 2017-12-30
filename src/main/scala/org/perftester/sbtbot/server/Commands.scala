@@ -4,34 +4,37 @@ import com.dhpcs.jsonrpc._
 import play.api.libs.json._
 
 sealed trait Message
+
 sealed trait ServerCommand extends Message
+
 sealed trait ClientCommand extends Message
 
 sealed trait Response extends Message
+
 sealed trait ResultResponse extends Response
 
 sealed trait Notification extends Message
 
 /**
- * Parameters and types used in the `initialize` message.
- */
+  * Parameters and types used in the `initialize` message.
+  */
 case class InitializeParams(
-  /**
-   * The process Id of the parent process that started
-   * the server.
-   */
-  processId: Long,
+                             /**
+                               * The process Id of the parent process that started
+                               * the server.
+                               */
+                             processId: Long,
 
-  /**
-   * The rootPath of the workspace. Is null
-   * if no folder is open.
-   */
-  rootPath: String,
+                             /**
+                               * The rootPath of the workspace. Is null
+                               * if no folder is open.
+                               */
+                             rootPath: String,
 
-  /**
-   * The capabilities provided by the client (editor)
-   */
-  capabilities: ClientCapabilities) extends ServerCommand
+                             /**
+                               * The capabilities provided by the client (editor)
+                               */
+                             capabilities: ClientCapabilities) extends ServerCommand
 
 case class InitializeError(retry: Boolean)
 
@@ -44,88 +47,106 @@ object ClientCapabilities {
 }
 
 case class ServerCapabilities(
-  /**
-   * Defines how text documents are synced.
-   */
-  textDocumentSync: Int = TextDocumentSyncKind.Full,
-  /**
-   * The server provides hover support.
-   */
-  hoverProvider: Boolean = false,
-  /**
-   * The server provides completion support.
-   */
-  completionProvider: Option[CompletionOptions],
-  /**
-   * The server provides signature help support.
-   */
-  signatureHelpProvider: Option[SignatureHelpOptions] = None,
-  /**
-   * The server provides goto definition support.
-   */
-  definitionProvider: Boolean = false,
-  /**
-   * The server provides find references support.
-   */
-  referencesProvider: Boolean = false,
-  /**
-   * The server provides document highlight support.
-   */
-  documentHighlightProvider: Boolean = false,
-  /**
-   * The server provides document symbol support.
-   */
-  documentSymbolProvider: Boolean = false,
-  /**
-   * The server provides workspace symbol support.
-   */
-  workspaceSymbolProvider: Boolean = false,
-  /**
-   * The server provides code actions.
-   */
-  codeActionProvider: Boolean = false,
-  /**
-   * The server provides code lens.
-   */
-  codeLensProvider: Option[CodeLensOptions] = None,
-  /**
-   * The server provides document formatting.
-   */
-  documentFormattingProvider: Boolean = false,
-  /**
-   * The server provides document range formatting.
-   */
-  documentRangeFormattingProvider: Boolean = false,
-  /**
-   * The server provides document formatting on typing.
-   */
-  documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
-  /**
-   * The server provides rename support.
-   */
-  renameProvider: Boolean = false
-)
+                               /**
+                                 * Defines how text documents are synced.
+                                 */
+                               textDocumentSync: Int = TextDocumentSyncKind.Full,
+
+                               /**
+                                 * The server provides hover support.
+                                 */
+                               hoverProvider: Boolean = false,
+
+                               /**
+                                 * The server provides completion support.
+                                 */
+                               completionProvider: Option[CompletionOptions],
+
+                               /**
+                                 * The server provides signature help support.
+                                 */
+                               signatureHelpProvider: Option[SignatureHelpOptions] = None,
+
+                               /**
+                                 * The server provides goto definition support.
+                                 */
+                               definitionProvider: Boolean = false,
+
+                               /**
+                                 * The server provides find references support.
+                                 */
+                               referencesProvider: Boolean = false,
+
+                               /**
+                                 * The server provides document highlight support.
+                                 */
+                               documentHighlightProvider: Boolean = false,
+
+                               /**
+                                 * The server provides document symbol support.
+                                 */
+                               documentSymbolProvider: Boolean = false,
+
+                               /**
+                                 * The server provides workspace symbol support.
+                                 */
+                               workspaceSymbolProvider: Boolean = false,
+
+                               /**
+                                 * The server provides code actions.
+                                 */
+                               codeActionProvider: Boolean = false,
+
+                               /**
+                                 * The server provides code lens.
+                                 */
+                               codeLensProvider: Option[CodeLensOptions] = None,
+
+                               /**
+                                 * The server provides document formatting.
+                                 */
+                               documentFormattingProvider: Boolean = false,
+
+                               /**
+                                 * The server provides document range formatting.
+                                 */
+                               documentRangeFormattingProvider: Boolean = false,
+
+                               /**
+                                 * The server provides document formatting on typing.
+                                 */
+                               documentOnTypeFormattingProvider: Option[DocumentOnTypeFormattingOptions] = None,
+
+                               /**
+                                 * The server provides rename support.
+                                 */
+                               renameProvider: Boolean = false
+                             )
 
 object ServerCapabilities {
   implicit val format = Json.format[ServerCapabilities]
 }
 
 case class CompletionOptions(resolveProvider: Boolean, triggerCharacters: Seq[String])
+
 object CompletionOptions {
   implicit val format: Format[CompletionOptions] = Json.format[CompletionOptions]
 }
 
 case class SignatureHelpOptions(triggerCharacters: Seq[String])
+
 object SignatureHelpOptions {
   implicit val format: Format[SignatureHelpOptions] = Json.format[SignatureHelpOptions]
 }
 
 case class CodeLensOptions(resolveProvider: Boolean = false)
+
 object CodeLensOptions {
   implicit val format: Format[CodeLensOptions] = Json.format[CodeLensOptions]
 }
 
 case class DocumentOnTypeFormattingOptions(firstTriggerCharacter: String, moreTriggerCharacters: Seq[String])
+
 object DocumentOnTypeFormattingOptions {
   implicit val format: Format[DocumentOnTypeFormattingOptions] = Json.format[DocumentOnTypeFormattingOptions]
 }
@@ -133,6 +154,7 @@ object DocumentOnTypeFormattingOptions {
 case class InitializeResult(capabilities: ServerCapabilities) extends ResultResponse
 
 case class Shutdown() extends ServerCommand
+
 object Shutdown {
   implicit val format: Format[Shutdown] = OFormat(
     Reads(jsValue => JsSuccess(Shutdown())),
@@ -142,30 +164,32 @@ object Shutdown {
 case class ShutdownResult(dummy: Int) extends ResultResponse
 
 case class ShowMessageRequestParams(
-  /**
-   * The message type. @see MessageType
-   */
-  tpe: Long,
+                                     /**
+                                       * The message type. @see MessageType
+                                       */
+                                     tpe: Long,
 
-  /**
-   * The actual message
-   */
-  message: String,
+                                     /**
+                                       * The actual message
+                                       */
+                                     message: String,
 
-  /**
-   * The message action items to present.
-   */
-  actions: Seq[MessageActionItem]) extends ClientCommand
+                                     /**
+                                       * The message action items to present.
+                                       */
+                                     actions: Seq[MessageActionItem]) extends ClientCommand
 
 /**
- * A short title like 'Retry', 'Open Log' etc.
- */
+  * A short title like 'Retry', 'Open Log' etc.
+  */
 case class MessageActionItem(title: String)
+
 object MessageActionItem {
   implicit val format = Json.format[MessageActionItem]
 }
 
 object ServerCommand extends CommandCompanion[ServerCommand] {
+
   import JsonRpcUtils._
 
   override val CommandFormats = Message.MessageFormats(
@@ -184,6 +208,7 @@ object ClientCommand extends CommandCompanion[ClientCommand] {
 // From server to client
 
 case class ShowMessageParams(tpe: Long, message: String) extends Notification
+
 case class LogMessageParams(tpe: Long, message: String) extends Notification
 
 // from client to server
@@ -193,6 +218,7 @@ case class ExitNotification() extends Notification
 case class DidChangeWatchedFiles(changes: Seq[FileEvent]) extends Notification
 
 case class Initialized() extends Notification
+
 object Initialized {
   implicit val format: Format[Initialized] = OFormat(
     Reads(jsValue => JsSuccess(Initialized())),
@@ -203,7 +229,10 @@ object Initialized {
 case class CancelRequest(id: Int) extends Notification
 
 case class FileEvent(uri: String, `type`: Int)
-object FileEvent { implicit val format = Json.format[FileEvent] }
+
+object FileEvent {
+  implicit val format = Json.format[FileEvent]
+}
 
 object FileChangeType {
   final val Created = 1
@@ -222,8 +251,6 @@ object Notification extends NotificationCompanion[Notification] {
 }
 
 object ResultResponse extends ResponseCompanion[Any] {
-  import JsonRpcUtils._
-
   override val ResponseFormats = Message.MessageFormats(
     "initialize" -> Json.format[InitializeResult],
     "shutdown" -> Json.format[ShutdownResult])

@@ -9,11 +9,12 @@ import org.perftester.sbtbot.SBTBot.{ExecuteTask, SBTBotReady, TaskResult}
 object SBTBotTestRunner {
   /**
     * Run a series of repeated sbt commands
-    * @param testDir The test directory
+    *
+    * @param testDir     The test directory
     * @param programArgs The inital sbt commands (e.g. setting flags)
-    * @param jvmArgs The jvm args to append (e.g. to increase memory)
-    * @param repeats The number of times to iterate
-    * @param commands The commands to execute on each iteration.
+    * @param jvmArgs     The jvm args to append (e.g. to increase memory)
+    * @param repeats     The number of times to iterate
+    * @param commands    The commands to execute on each iteration.
     */
   def run(testDir: Path, programArgs: List[String], jvmArgs: List[String], repeats: Int, commands: List[String]): Unit = {
     implicit val actorSystem: ActorSystem = ActorSystem("test")
@@ -23,6 +24,7 @@ object SBTBotTestRunner {
     val proxy = TestProbe()
     val parent = actorSystem.actorOf(Props(new Actor {
       val child: ActorRef = context.actorOf(SBTBot.props(testDir, programArgs, jvmArgs), "sbtbot")
+
       def receive: Receive = {
         case x if sender == child => proxy.ref forward x
         case x => child forward x
@@ -33,11 +35,9 @@ object SBTBotTestRunner {
 
     try {
       proxy.expectMsg(600.seconds, SBTBotReady)
-      println("SBT Bot ready - triggering clean")
+      println("SBT Bot ready - starting run")
 
-      val testName = "ActionCompositionSpec"
-
-      for(i <- 1 until repeats) {
+      for (i <- 1 to repeats) {
         implicit val sender: ActorRef = proxy.ref
         commands.zipWithIndex foreach { case (cmd, idx) =>
           println(s"--------------- $cmd - iteration  $i/$repeats -------------------------------")

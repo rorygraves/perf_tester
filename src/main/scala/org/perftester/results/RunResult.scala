@@ -28,9 +28,10 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
   )
 
   class Aggregate(val grouped: Seq[PhaseResults]) {
-    def handleEmpty( fn : => PhaseResults): PhaseResults = {
+    def handleEmpty(fn: => PhaseResults): PhaseResults = {
       if (grouped.isEmpty) PhaseResults.empty else fn
     }
+
     val totals: PhaseResults = handleEmpty(PhaseResults.combine(grouped, _ + _))
     val min: PhaseResults = handleEmpty(PhaseResults.combine(grouped, Math.min))
     val max: PhaseResults = handleEmpty(PhaseResults.combine(grouped, Math.max))
@@ -55,9 +56,10 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
       val index = ((size - 1) * pos).toInt
       results(index)
     }
-    def atPC(pos:Double) = if (results.isEmpty) -1 else {
+
+    def atPC(pos: Double): Double = if (results.isEmpty) -1 else {
       val value = at(pos)
-      ((value / mean) -1) *100
+      ((value / mean) - 1) * 100
     }
 
     override def toString: String = s"$mean [+${atPC(1)}% :${atPC(.9)}% -${atPC(0)}%"
@@ -70,7 +72,7 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
       String.format(s"%,$sigDigits.${decimalDigits}f", new java.lang.Double(value))
     }
 
-    def formatted(s: Int, p: Int) = {
+    def formatted(s: Int, p: Int): String = {
       s"${formatResult(s, p, mean)} [${formatPercent(4, 2, atPC(0))}% ${formatPercent(4, 2, atPC(1))}%]"
     }
   }
@@ -79,7 +81,7 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
     def range(lower: Double, upper: Double, aggregate: Aggregate, fn: (PhaseResults) => Double) = {
       val results: Array[Double] = aggregate.grouped.map(fn)(scala.collection.breakOut)
       util.Arrays.sort(results)
-      new Distribution(results.slice((results.size * lower).toInt, (results.size * upper).toInt))
+      new Distribution(results.slice((results.length * lower).toInt, (results.length * upper).toInt))
     }
   }
 
@@ -88,7 +90,7 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
   lazy val byIteration = rawData.groupBy(_.iterationId) map { case (k, v) => k -> new Aggregate(v) }
 
 
-  lazy val totals = {
+  lazy val totals: Aggregate = {
     val byIteration = rawData.groupBy(_.iterationId) map { case (k, v) => k -> new Aggregate(v).totals }
     new Aggregate(byIteration.values.toList)
   }
@@ -104,7 +106,8 @@ case class RunResult(testConfig: TestConfig, rawData: Seq[PhaseResults], iterati
     lazy val allWallClockMS = Distribution.range(lower, upper, totals, _.wallClockTimeMS)
     lazy val allAllocated = Distribution.range(lower, upper, totals, _.allocatedMB)
     lazy val allCPUTime = Distribution.range(lower, upper, totals, _.cpuTimeMS)
-    def size = rawData.size * (upper-lower)
+
+    def size = rawData.size * (upper - lower)
   }
 
   val all = new Detail(0, 1)

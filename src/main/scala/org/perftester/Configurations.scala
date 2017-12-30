@@ -6,7 +6,7 @@ object Configurations {
 
   val configurations: Map[String, List[TestConfig]] = Map(
     "212x" -> List(
-      TestConfig("00_1.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"))
+      TestConfig("00_1.12.x", BuildFromGit("8e6964a13035bf83d3050916e988715d23e51b49"))
     ),
     "2121vs212x" -> List(
       TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f")),
@@ -25,7 +25,7 @@ object Configurations {
 
 
     "mikeLatest" -> List(
-//      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
+      //      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
       //            TestConfig(s"00_backend-0S-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
       //              "-YaddBackendThreads", "0",
       //              "-YIoWriterThreads", "0",

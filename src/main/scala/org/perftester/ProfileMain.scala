@@ -75,7 +75,8 @@ object ProfileMain {
         val reused = lastBuiltScalac.get(targetDir).contains(sha)
         lastBuiltScalac(targetDir) = sha
         (targetDir, reused)
-      case TestConfig(_, BuildFromDir(sourceDir, _, rebuild), _, _) =>
+      case TestConfig(_, bfd@BuildFromDir(_, _, rebuild), _, _) =>
+        val sourceDir = bfd.path
         val reuse = {
           if (lastBuiltScalac.contains(sourceDir)) {
             println(s"dir reused - already used")
@@ -153,18 +154,18 @@ object ProfileMain {
     //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
     //    can we get run of runsbt?
     log.info(s"Building compiler in $dir")
-    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
-    runSbt(List("""set scalacOptions in Compile in ThisBuild += "optimise" """, "dist/mkPack"), dir, Nil)
+    //    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
+    runSbt(List("setupPublishCore", "dist/mkPack"), dir, Nil)
   }
 
-  def buildDir(path: Path) = path / "build" / "pack"
+  def buildDir(path: Path): Path = path / "build" / "pack"
 
   def executeTest(envConfig: EnvironmentConfig, testConfig: TestConfig, profileOutputFile: Path, repeats: Int): Unit = {
     val mkPackPath = testConfig.buildDefn match {
-      case BuildFromDir(dir, _, _) => buildDir(dir)
+      case bfd: BuildFromDir => buildDir(bfd.path)
       case BuildFromGit(_, _) => buildDir(envConfig.checkoutDir)
     }
-    println("Logging stats to " + profileOutputFile)
+    log.info("Logging stats to " + profileOutputFile)
     if (Files.exists(profileOutputFile.toNIO))
       Files.delete(profileOutputFile.toNIO)
     val extraArgsStr = if (testConfig.extraArgs.nonEmpty) testConfig.extraArgs.mkString("\"", "\",\"", "\",") else ""
@@ -194,7 +195,7 @@ object ProfileMain {
     } else command
 
     val fullCommand = sbtCommandLine(extraJVMArgs) ::: escaped
-    println(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
+    log.info(s"running sbt : ${fullCommand.mkString("'", "' '", "'")}")
     val proc = new ProcessBuilder(fullCommand.asJava)
     proc.directory(dir.toIO)
     proc.inheritIO()
@@ -202,11 +203,5 @@ object ProfileMain {
       case 0 =>
       case r => throw new IllegalStateException(s"bad result $r")
     }
-  }
-
-  def getRevisions(base: String, checkoutDir: Path): List[String] = {
-    val res = %%("git", "rev-list", "--no-merges", s"$base..HEAD")(checkoutDir)
-    val commits = res.out.lines.toList.reverse
-    commits
   }
 }

@@ -3,9 +3,10 @@ package org.perftester
 import java.io.File
 
 import ammonite.ops.Path
+import scopt.OptionParser
 
 object PerfTesterOptionParser {
-  val parser = new scopt.OptionParser[EnvironmentConfig]("ProfileMain") {
+  val parser: OptionParser[EnvironmentConfig] = new OptionParser[EnvironmentConfig]("ProfileMain") {
     head("perf_tester", "1.0")
 
     opt[Int]('i', "iterations").action((x, c) =>

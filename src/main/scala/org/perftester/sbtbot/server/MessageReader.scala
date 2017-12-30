@@ -60,6 +60,7 @@ class MessageReader(in: InputStream) {
   private final def getHeaders(): Map[String, String] = lock.synchronized {
     val EmptyPair = "" -> ""
     val EmptyMap = Map.empty[String, String]
+
     def atDelimiter(idx: Int): Boolean = {
       (data.size >= idx + 4
         && data(idx) == '\r'
@@ -134,7 +135,9 @@ class MessageReader(in: InputStream) {
       None
     else {
       val length = headers.get("Content-Length") match {
-        case Some(len) => try len.toInt catch { case e: NumberFormatException => -1 }
+        case Some(len) => try len.toInt catch {
+          case e: NumberFormatException => -1
+        }
         case _ => -1
       }
 

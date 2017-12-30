@@ -8,11 +8,8 @@ sealed trait BuildType {
 
 case class BuildFromGit(sha: String, customPath: Option[Path] = None) extends BuildType
 
-object BuildFromDir {
-  def apply(path:String, forceOverwrite:Boolean = false, rebuild : Boolean = false): BuildFromDir =
-    BuildFromDir(Path(path), forceOverwrite, rebuild)
+case class BuildFromDir(pathStr: String, override val forceOverwriteResults: Boolean = false, rebuild: Boolean = false) extends BuildType {
+  def path: Path = Path(pathStr)
 }
-
-case class BuildFromDir(path: Path, override val forceOverwriteResults:Boolean, rebuild : Boolean) extends BuildType
 
 case class TestConfig(id: String, buildDefn: BuildType, extraArgs: List[String] = Nil, extraJVMArgs: List[String] = Nil)

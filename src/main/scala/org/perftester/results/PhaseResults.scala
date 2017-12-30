@@ -2,27 +2,28 @@ package org.perftester.results
 
 object ResultType extends Enumeration {
   //single threaded
-  val SINGLE= Value("single")
+  val SINGLE = Value("single")
   //seperate task
-  val TASK= Value("task")
+  val TASK = Value("task")
   //the main thread of a MT
-  val MAIN= Value("main")
+  val MAIN = Value("main")
   //total of MT
-  val TOTAL= Value("total")
+  val TOTAL = Value("total")
   //all of the runs
-  val ALL= Value("all")
+  val ALL = Value("all")
   //used in merge
-  val NA= Value("--")
+  val NA = Value("--")
 
 }
-case class PhaseResults private (iterationId: Int, phaseId: Int,
-                        phaseName: String, resultType:ResultType.Value, id:Int, comment:String,
-                        wallClockTimeMS : Double, idleTimeMS : Double, cpuTimeMS : Double,
-                        userTimeMS : Double, allocatedMB: Double, retainedMB: Double, gcTimeMS: Double)
+
+case class PhaseResults private(iterationId: Int, phaseId: Int,
+                                phaseName: String, resultType: ResultType.Value, id: Int, comment: String,
+                                wallClockTimeMS: Double, idleTimeMS: Double, cpuTimeMS: Double,
+                                userTimeMS: Double, allocatedMB: Double, retainedMB: Double, gcTimeMS: Double)
 
 
 object PhaseResults {
-  val empty = PhaseResults(-1,-1,"empty", null,-1, "empty", 0,0,0,0,0,0,0)
+  val empty = PhaseResults(-1, -1, "empty", null, -1, "empty", 0, 0, 0, 0, 0, 0, 0)
 
   def combine(results: Seq[PhaseResults], fn: (Double, Double) => Double): PhaseResults = {
     results reduce {
@@ -39,7 +40,7 @@ object PhaseResults {
   }
 
   def transform(results: PhaseResults, fn: (Double) => Double): PhaseResults = {
-    PhaseResults(results.iterationId,results.phaseId,results.phaseName,results.resultType,
+    PhaseResults(results.iterationId, results.phaseId, results.phaseName, results.resultType,
       results.id, results.comment,
       wallClockTimeMS = fn(results.wallClockTimeMS),
       idleTimeMS = fn(results.idleTimeMS),
