@@ -2,38 +2,45 @@ package org.perftester.results
 
 import ammonite.ops.{Path, read}
 import org.perftester.TestConfig
-import org.perftester.results.rows.{DataRow, MainDataRowType, PhaseRow}
+import org.perftester.results.rows._
 
 import scala.collection.SortedSet
 
 object ResultReader {
   def readResults(testConfig: TestConfig, file: Path, iterations: Int): RunResult = {
     val lines    = read.lines ! file
-    val asValues = lines.map(_.split(',').toList)
+    val asValues = lines.map(_.split(',').toList).toList
     val dataRows = asValues.flatMap(DataRow(_))
 
-    val rows = dataRows.filter(_.rowType == MainDataRowType).map {
-      case row: PhaseRow =>
-        PhaseResults(
-          // data,
-          row.runId, // iteration id
-          row.phaseId, // phaseId
-          row.phaseName, // phaseName
-          ResultType.MAIN, // type ??????????????????
-          row.runId, // id
-          row.purpose, // comment
-          row.runMs.toDouble, // wallClockTimeMs,
-          row.idleMs.toDouble, // idleTimeMs,
-          row.cpuTimeMs.toDouble, // cpuTimeMs,
-          row.userTimeMs, // userTimeMS
-          row.allocatedMbs, // allocatedMB
-          row.heapSizeMb, // retainedMB
-          0.toDouble // gcTimeMs
-        )
+    val gcInfo = dataRows.collect {
+      case gc: GCDataRow => gc
     }
 
-    val alIterations = SortedSet((1 to iterations).toList: _*)
-    val phases       = rows.groupBy(_.phaseName).keySet
-    RunResult(testConfig, rows, alIterations, phases)
+    def gcEvents(start: Long, end: Long) = gcInfo.collect {
+      case gc @ GCDataRow(startNs, endNs, _, _, _, _, _, _)
+          if (startNs > start && startNs < end) || (endNs > start && endNs < end) =>
+        gc
+    }
+
+    val background = (dataRows
+      .collect {
+        case row: BackgroundPhaseRow => row
+      })
+      .groupBy {
+        case row: BackgroundPhaseRow => (row.runId, row.phaseName)
+      }
+      .withDefaultValue(Nil)
+
+    val rows = (dataRows
+      .collect {
+        case row: MainPhaseRow =>
+          PhaseResults(row,
+                       background((row.runId, row.phaseName)),
+                       gcEvents(row.startNs, row.endNs))
+      })
+      .sortBy(r => (r.iterationId, r.phaseId))
+    val allIterations = (1 to iterations).to[SortedSet]
+    val allPhases     = rows.groupBy(_.phaseName).keySet
+    RunResult(testConfig, rows, allIterations, allPhases)
   }
 }

@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import ammonite.ops.{%%, Path, ShelloutException}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
-import org.perftester.results.{ResultReader, RunResult}
+import org.perftester.results.{PhaseResults, ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -28,14 +28,37 @@ object ProfileMain {
 
   val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
-  def printAggResults(testConfig: TestConfig, results: RunResult#Detail): Unit = {
-    val allWallClockTimeAvg  = results.allWallClockMS
-    val allCpuTimeAvg        = results.allCPUTime
-    val allAllocatedBytes    = results.allAllocated
+  def printAggResults(testConfig: TestConfig, results: Seq[PhaseResults], limit: Double): Unit = {
+    case class Distribution(min: Double, max: Double, mean: Double) {
+      def formatPercent(sigDigits: Int, decimalDigits: Int, value: Double): String = {
+        String.format(s"%+$sigDigits.${decimalDigits}f", new java.lang.Double(value))
+      }
+
+      def formatResult(sigDigits: Int, decimalDigits: Int, value: Double): String = {
+        String.format(s"%,$sigDigits.${decimalDigits}f", new java.lang.Double(value))
+      }
+
+      def formatted(s: Int, p: Int): String = {
+        s"${formatResult(s, p, mean)} [${formatPercent(4, 2, (min / mean) * 100 - 100)}% ${formatPercent(4, 2, (max / mean) * 100 - 100)}%]"
+      }
+    }
+
+    def distribution(fn: PhaseResults => Double): Distribution = {
+      if (results.isEmpty) Distribution(-1, -1, -1)
+      else {
+        val raw  = results map fn sorted
+        val size = results.size
+        val mean = raw.sum / size
+        Distribution(raw.head, raw((size - 1 * limit).toInt), mean)
+      }
+    }
+    val allWallClockTimeAvg  = distribution(_.wallClockTimeMS)
+    val allCpuTimeAvg        = distribution(_.cpuTimeMS)
+    val allAllocatedBytes    = distribution(_.allocatedMB)
     val allWallMsStr         = allWallClockTimeAvg.formatted(6, 2)
     val allCpuMsStr          = allCpuTimeAvg.formatted(6, 2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
-    val size                 = results.size.toInt
+    val size                 = results.size
     println(
       "%25s\t%4s\t%25s\t%25s\t%25s"
         .format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))

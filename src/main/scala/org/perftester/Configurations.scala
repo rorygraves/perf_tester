@@ -25,6 +25,27 @@ object Configurations {
       //      TestConfig("00_backend-3", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
       //      TestConfig("00_backend-4", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
     ),
+    "mike" -> List(
+      TestConfig("00_before-pr", BuildFromGit("4a03b9920e67ae2bac47d4a02656791b0535c9d3")),
+      TestConfig("00_backend-S",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "-1", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-0",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "0", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-1",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "1", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-2",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "2", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-3",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "3", "-Yprofile-run-gc", "all")),
+      TestConfig("00_backend-4",
+                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
+                 extraArgs = List("-YaddBackendThreads", "4", "-Yprofile-run-gc", "all"))
+    ),
     "mikeLatest" -> List(
       //      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
       //            TestConfig(s"00_backend-0S-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
