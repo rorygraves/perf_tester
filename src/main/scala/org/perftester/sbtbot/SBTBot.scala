@@ -2,12 +2,14 @@ package org.perftester.sbtbot
 
 import java.io.File
 import java.net.InetSocketAddress
+import java.nio.file.NoSuchFileException
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.io.Tcp._
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
 import ammonite.ops.{Path, read}
+import com.fasterxml.jackson.core.JsonParseException
 import org.perftester.ProfileMain
 import org.perftester.sbtbot.SBTBot._
 import org.perftester.sbtbot.process._
@@ -100,23 +102,61 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
     case x => log.info("Don't know what to do with {}", x)
   }
 
+  def readLSPJsonFile(workspaceRootDir: Path): Either[String, String] = {
+    val jsonPath = workspaceRootDir / "project" / "target" / "active.json"
+    try {
+      val activeJsonContests = read ! jsonPath
+      val activeJson         = Json.parse(activeJsonContests)
+      val tokenFilePath      = (activeJson \ "tokenfilePath").as[String]
+      Right(tokenFilePath)
+    } catch {
+      case _: NoSuchFileException =>
+        Left(
+          s"Unable to read active.json file $jsonPath - is the test project configured to use sbt 1.1+?")
+      case _: JsonParseException =>
+        Left(s"Failed to parse json file $jsonPath")
+    }
+  }
+
+  def readURIAndTokenFromTokenFile(
+      tokenFile: String): Either[String, (String, InetSocketAddress)] = {
+    try {
+      val tokenFileContents = read ! Path(tokenFile)
+      val tokenJson         = Json.parse(tokenFileContents)
+      val uri               = (tokenJson \ "uri").as[String]
+      val token             = (tokenJson \ "token").as[String]
+
+      val shortUrl   = uri.replace("tcp://", "")
+      val split      = shortUrl.split(":")
+      val host       = split(0)
+      val port       = split(1).toInt
+      val socketAddr = new InetSocketAddress(host, port)
+      Right((token, socketAddr))
+    } catch {
+      case _: NoSuchFileException =>
+        Left(
+          s"Unable to read token file $tokenFile - refered to by active.json, is the test project configured to use sbt 1.1+?")
+      case p: JsonParseException =>
+        Left(s"Unable to parse token file $tokenFile")
+    }
+  }
+
   def connectToServer(): Unit = {
-    val activeJsonContests = read ! workspaceRootDir / "project" / "target" / "active.json"
-    val activeJson         = Json.parse(activeJsonContests)
-    val tokenFilePath      = (activeJson \ "tokenfilePath").as[String]
+    val readResults = readLSPJsonFile(workspaceRootDir) match {
+      case Left(error) =>
+        Left(error)
+      case Right(tokenFileLocation) =>
+        readURIAndTokenFromTokenFile(tokenFileLocation)
+    }
 
-    val tokenFile = read ! Path(tokenFilePath)
-    val tokenJson = Json.parse(tokenFile)
-    val uri       = (tokenJson \ "uri").as[String]
-    val token     = (tokenJson \ "token").as[String]
-
-    val shortUrl   = uri.replace("tcp://", "")
-    val split      = shortUrl.split(":")
-    val host       = split(0)
-    val port       = split(1).toInt
-    val socketAddr = new InetSocketAddress(host, port)
-    IO(Tcp) ! Connect(socketAddr)
-    context.become(serverConnectReceive(token))
+    readResults match {
+      case Left(errorMsg) =>
+        log.error(s"Failed to initialise connection to SBT - error: $errorMsg")
+        context.stop(self)
+      case Right((token, socketAddr)) =>
+        IO(Tcp) ! Connect(socketAddr)
+        context.become(serverConnectReceive(token))
+    }
   }
 
   var connection: ActorRef = _
@@ -158,8 +198,8 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
         seenInitPrompt = true
         checkInitComplete()
       }
-    case x =>
-      println("AAAGGGGHHHH " + x)
+    case any =>
+      log.error("Unknown message (ignored:" + any)
   }
 
   def checkInitComplete(): Unit = {
@@ -227,7 +267,7 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
     connection ! Write(
       ByteString(
         s"""{ "jsonrpc": "2.0", "id": 2, "method": "sbt/exec", "params": { "commandLine": "${c.cmd}" } }
-         |""".stripMargin))
+           |""".stripMargin))
   }
 
   def idleReceive: Receive = {
