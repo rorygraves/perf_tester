@@ -27,7 +27,8 @@ case class PhaseResults(main: MainPhaseRow,
 
   def phaseName: String = main.phaseName
 
-  def wallClockTimeMS = toMs(main.duration)
+  def wallClockTimeMS    = toMs(main.duration)
+  def allWallClockTimeMS = toMs(sumAll(_.duration))
 
   def idleTimeMS: Double = toMs(sumAll(_.idleNs))
 

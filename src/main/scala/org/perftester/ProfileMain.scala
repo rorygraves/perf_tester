@@ -52,15 +52,26 @@ object ProfileMain {
         Distribution(raw.head, raw.last, mean)
       }
     }
-    val allWallClockTimeAvg  = distribution(_.wallClockTimeMS)
-    val allCpuTimeAvg        = distribution(_.cpuTimeMS)
-    val allAllocatedBytes    = distribution(_.allocatedMB)
+    val wallClockTimeAvg    = distribution(_.wallClockTimeMS)
+    val allWallClockTimeAvg = distribution(_.allWallClockTimeMS)
+    val allCpuTimeAvg       = distribution(_.cpuTimeMS)
+    val allAllocatedBytes   = distribution(_.allocatedMB)
+    val allIdleAvg          = distribution(_.idleTimeMS)
+
+    val wallMsStr            = wallClockTimeAvg.formatted(6, 2)
     val allWallMsStr         = allWallClockTimeAvg.formatted(6, 2)
     val allCpuMsStr          = allCpuTimeAvg.formatted(6, 2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
+    val allIdleMsStr         = allIdleAvg.formatted(6, 2)
     println(
-      "%25s\t%4s\t%25s\t%25s\t%25s"
-        .format(testConfig.id, size, allWallMsStr, allCpuMsStr, allAllocatedBytesStr))
+      "%25s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
+        .format(testConfig.id,
+                size,
+                wallMsStr,
+                allWallMsStr,
+                allCpuMsStr,
+                allIdleMsStr,
+                allAllocatedBytesStr))
 
   }
 

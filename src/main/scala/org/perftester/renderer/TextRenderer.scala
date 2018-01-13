@@ -12,7 +12,7 @@ object TextRenderer {
                         results: Seq[(TestConfig, RunResult)]): Unit = {
     def heading(title: String) {
       println(
-        f"-----\n$title\n${"Run Name"}%25s\t${"AllWall(ms)"}%25s\t${"CPU(ms)"}%25s\t${"Allocated(MBs)"}%25s")
+        f"-----\n$title\n${"Run Name"}%25s\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
     }
     def allPhases(raw: Seq[PhaseResults]): Seq[PhaseResults] = {
       val res = raw.groupBy(_.iterationId) map {
