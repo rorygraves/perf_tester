@@ -19,7 +19,7 @@ object TextRenderer {
         case (iterationNo, iterationData) =>
           val first   = iterationData.head
           val startNs = iterationData.sortBy(_.main.startNs).head.main.startNs
-          val endNs   = iterationData.sortBy(-_.main.endNs).head.main.startNs
+          val endNs   = iterationData.sortBy(-_.main.endNs).head.main.endNs
 
           val mainPhaseRow: MainPhaseRow = MainPhaseRow(
             startNs = startNs,
@@ -28,6 +28,7 @@ object TextRenderer {
             phaseId = -1,
             phaseName = "all",
             purpose = "collated",
+            taskCount = -1,
             threadId = -1,
             threadName = "N/A",
             runNs = endNs - startNs,
@@ -64,7 +65,7 @@ object TextRenderer {
         heading(s"after $i 90%")
         results.foreach {
           case (config, configResult) =>
-            val skipped = configResult.rawData.dropWhile(_.iterationId >= i)
+            val skipped = configResult.rawData.dropWhile(_.iterationId <= i)
             printAggResults(config, allPhases(skipped), 0.9)
         }
 
@@ -72,7 +73,7 @@ object TextRenderer {
           heading(s"after $i 90%, phase $phase")
           for { (config, configResult) <- results } {
             val skipped = configResult.rawData.filter {
-              case row => row.iterationId >= i && row.phaseName == phase
+              case row => row.iterationId > i && row.phaseName == phase
             }
 
             printAggResults(config, skipped, 0.9)
@@ -82,7 +83,7 @@ object TextRenderer {
           heading(s"after $i 90%, phase $phase no GC")
           for { (config, configResult) <- results } {
             val skipped = configResult.rawData.filter {
-              case row => row.iterationId >= i && row.phaseName == phase && row.gcTimeMS == 0
+              case row => row.iterationId > i && row.phaseName == phase && row.gcTimeMS == 0
             }
 
             printAggResults(config, skipped, 0.9)

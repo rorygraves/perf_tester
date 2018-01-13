@@ -49,11 +49,11 @@ case class PhaseResults(main: MainPhaseRow,
   def sumAll(fn: PhaseRow => Long) = fn(main) + (background map fn).sum
 }
 
-object PhaseResults {
-  val empty =
-    PhaseResults(MainPhaseRow(-1, -1, -1, -1, "empty", null, -1, "empty", 0, 0, 0, 0, 0, 0),
-                 Nil,
-                 Nil)
+//object PhaseResults {
+//  val empty =
+//    PhaseResults(MainPhaseRow(-1, -1, -1, -1, "empty", null, -1, "empty", 0, 0, 0, 0, 0, 0),
+//                 Nil,
+//                 Nil)
 //
 //  def union(results: Seq[PhaseResults], fn: (Long, Long) => Long): PhaseResults = {
 //    results reduce { (p1, p2) =>
@@ -93,4 +93,4 @@ object PhaseResults {
 //      gcTimeMS = fn(results.gcTimeMS)
 //    )
 //  }
-}
+//}

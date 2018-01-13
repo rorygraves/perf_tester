@@ -9,8 +9,11 @@ import scala.collection.SortedSet
 object ResultReader {
   def readResults(testConfig: TestConfig, file: Path, iterations: Int): RunResult = {
     val lines    = read.lines ! file
-    val asValues = lines.map(_.split(',').toList).toList
-    val dataRows = asValues.flatMap(DataRow(_))
+    val asValues = lines.map(_.split(',').map(_.trim).toList).toList
+    val info = asValues.collectFirst {
+      case values if values(0) == "info" => InfoRow.parse(values)
+    }.get
+    val dataRows = asValues.flatMap(DataRow(_, info.version))
 
     val gcInfo = dataRows.collect {
       case gc: GCDataRow => gc

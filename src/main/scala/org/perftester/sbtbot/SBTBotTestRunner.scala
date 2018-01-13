@@ -21,7 +21,8 @@ object SBTBotTestRunner {
           programArgs: List[String],
           jvmArgs: List[String],
           repeats: Int,
-          commands: List[String]): Unit = {
+          commands: List[String],
+          debugging: Boolean): Unit = {
     implicit val actorSystem: ActorSystem = ActorSystem("test")
 
     val manager = IO(Tcp)
@@ -42,6 +43,7 @@ object SBTBotTestRunner {
     try {
       proxy.expectMsg(600.seconds, SBTBotReady)
       println("SBT Bot ready - starting run")
+      val timeout = if (debugging) 20 minutes else 2 minutes
 
       for (i <- 1 to repeats) {
         implicit val sender: ActorRef = proxy.ref
@@ -50,7 +52,7 @@ object SBTBotTestRunner {
             println(
               s"--------------- $cmd - iteration  $i/$repeats -------------------------------")
             parent ! ExecuteTask(s"$idx", cmd)
-            proxy.expectMsgClass(120.seconds, classOf[TaskResult])
+            proxy.expectMsgClass(timeout, classOf[TaskResult])
             Thread.sleep(5000)
         }
       }
