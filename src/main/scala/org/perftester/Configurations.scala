@@ -69,85 +69,61 @@ object Configurations {
                    extraArgs = List("-YaddBackendThreads", "4", "-Yprofile-run-gc", "all"))
       )
     }),
-    "mikeLatest" -> List(
-      //      TestConfig("latest", BuildFromDir("C:/Users/User/Documents/scalac/backend", false), extraArgs = List()),//"-Yprofile-run-gc", "*")),
-      //            TestConfig(s"00_backend-0S-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "0",
-      //              "-YIoWriterThreads", "0",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-0A-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "-1",
-      //              "-YIoWriterThreads", "0",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-0A-1-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "-1",
-      //              "-YIoWriterThreads", "1",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-0A-2-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "-1",
-      //              "-YIoWriterThreads", "2",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-0A-3-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "-1",
-      //              "-YIoWriterThreads", "3",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-1-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "1",
-      //              "-YIoWriterThreads", "0",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-1-1-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "1",
-      //              "-YIoWriterThreads", "1",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-1-2-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "1",
-      //              "-YIoWriterThreads", "2",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //            TestConfig(s"00_backend-1-3-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //              "-YaddBackendThreads", "1",
-      //              "-YIoWriterThreads", "3",
-      //              "-YosIoThreads", "0",
-      //              "-Yprofile-run-gc", "all")
-      //            ),
-      //          TestConfig(s"00_backend-2-0-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //            "-YaddBackendThreads", "2",
-      //            "-YIoWriterThreads", "0",
-      //            "-YosIoThreads", "0",
-      //            "-Yprofile-run-gc", "all")
-      //          ),
-      //          TestConfig(s"00_backend-2-1-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //            "-YaddBackendThreads", "2",
-      //            "-YIoWriterThreads", "1",
-      //            "-YosIoThreads", "0",
-      //            "-Yprofile-run-gc", "all")
-      //          ),
-      //          TestConfig(s"00_backend-2-2-0", BuildFromDir("S:/scala/backend", false), extraArgs = List (
-      //            "-YaddBackendThreads", "2",
-      //            "-YIoWriterThreads", "2",
-      //            "-YosIoThreads", "0",
-      //            "-Yprofile-run-gc", "all")
-      //          ),
+    "mikeCheck" -> List(
+      TestConfig(s"00_before-pr", BuildFromGit("4a03b9920e67ae2bac47d4a02656791b0535c9d3")),
       TestConfig(
-        s"00_backend-2-3-0",
-        BuildFromGit("ac484f21675179f303177e00ba76fe8dbb41c9e9"),
+        s"00_backend-0S-0-0",
+        BuildFromDir("S:/scala/backend", false),
         extraArgs = List("-YaddBackendThreads",
+                         "0",
+                         "-YIoWriterThreads",
+                         "0",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-0A-0-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "-1",
+                         "-YIoWriterThreads",
+                         "0",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-0A-1-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "-1",
+                         "-YIoWriterThreads",
+                         "1",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-0A-2-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "-1",
+                         "-YIoWriterThreads",
                          "2",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-0A-3-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "-1",
                          "-YIoWriterThreads",
                          "3",
                          "-YosIoThreads",
@@ -157,7 +133,7 @@ object Configurations {
       ),
       TestConfig(
         s"00_backend-1-0-0",
-        BuildFromGit("ac484f21675179f303177e00ba76fe8dbb41c9e9"),
+        BuildFromDir("S:/scala/backend", false),
         extraArgs = List("-YaddBackendThreads",
                          "1",
                          "-YIoWriterThreads",
@@ -168,12 +144,108 @@ object Configurations {
                          "all")
       ),
       TestConfig(
-        s"00_backend-0-0-0",
-        BuildFromGit("ac484f21675179f303177e00ba76fe8dbb41c9e9"),
+        s"00_backend-1-1-0",
+        BuildFromDir("S:/scala/backend", false),
         extraArgs = List("-YaddBackendThreads",
+                         "1",
+                         "-YIoWriterThreads",
+                         "1",
+                         "-YosIoThreads",
                          "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-1-2-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "1",
+                         "-YIoWriterThreads",
+                         "2",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-1-3-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "1",
+                         "-YIoWriterThreads",
+                         "3",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-2-0-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "2",
                          "-YIoWriterThreads",
                          "0",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-2-1-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "2",
+                         "-YIoWriterThreads",
+                         "1",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-2-2-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "2",
+                         "-YIoWriterThreads",
+                         "2",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-3-0-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "3",
+                         "-YIoWriterThreads",
+                         "0",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-3-1-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "3",
+                         "-YIoWriterThreads",
+                         "1",
+                         "-YosIoThreads",
+                         "0",
+                         "-Yprofile-run-gc",
+                         "all")
+      ),
+      TestConfig(
+        s"00_backend-3-2-0",
+        BuildFromDir("S:/scala/backend", false),
+        extraArgs = List("-YaddBackendThreads",
+                         "3",
+                         "-YIoWriterThreads",
+                         "2",
                          "-YosIoThreads",
                          "0",
                          "-Yprofile-run-gc",
