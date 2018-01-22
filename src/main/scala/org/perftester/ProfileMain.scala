@@ -3,7 +3,7 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, Path, ShelloutException}
+import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
@@ -172,7 +172,7 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         try {
           log.info(s"Running: git fetch    (in $dir)")
-          %%("git", "fetch")(dir)
+          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(dir)
           log.info(s"Running: git reset --hard $hash    (in $dir)")
           %%("git", "reset", "--hard", hash)(dir)
         } catch {
