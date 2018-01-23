@@ -52,15 +52,17 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
   private val promptStr        = UUID.randomUUID().toString
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
-    val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
+    val sbt     = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
+    val sbtOpts = sys.env.get("SBT_OPTS").toList.flatMap(_.split(" "))
     require(sbt.exists(), "sbt-launch.jar must exist in sbtlib directory")
-    val raw = List("java",
-                   "-Dfile.encoding=UTF8",
-                   "-Xmx12G",
-                   "-XX:MaxPermSize=256m",
-                   "-XX:ReservedCodeCacheSize=128m",
-                   "-Dsbt.log.format=false",
-                   "-mx12G") ::: extraJVMArgs ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+    val raw = List(
+      "java",
+      "-Dfile.encoding=UTF8",
+      "-Xmx12G",
+      "-XX:MaxPermSize=256m",
+      "-XX:ReservedCodeCacheSize=128m",
+      "-Dsbt.log.format=false",
+      "-mx12G") ::: extraJVMArgs ::: sbtOpts ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
     raw
   }
 
