@@ -3,7 +3,7 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException}
+import ammonite.ops.{%%, read, Command, Path, Shellout, ShelloutException}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
@@ -220,23 +220,32 @@ object ProfileMain {
         "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil
       else Nil
 
-    val programArgs = List(
-      s"++2.12.3=$mkPackPath",
-      s"""set scalacOptions in Compile in ThisBuild ++=List($extraArgsStr"-Yprofile-destination","$profileOutputFile")""")
+    val programArgs =
+      s"++2.12.3=$mkPackPath" :: (
+        List("Compile", "Test") map { cfg => // sbt woe
+          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","$profileOutputFile")"""
+        }
+      )
 
     val jvmArgs = debugArgs ::: testConfig.extraJVMArgs
+
+    val dotfile = envConfig.testDir / ".perf_tester"
+    val sbtCommands =
+      if (dotfile.toIO.exists()) read.lines(dotfile).toList.filterNot(_.trim.isEmpty)
+      else "clean" :: "compile" :: Nil // slightly bogus default
+
     SBTBotTestRunner.run(envConfig.testDir,
                          programArgs,
                          jvmArgs,
                          repeats,
-                         List("clean", "akka-actor/compile"),
+                         sbtCommands,
                          envConfig.runWithDebug)
   }
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
     val sbt = new File("sbtlib/sbt-launch.jar").getAbsoluteFile
     require(sbt.exists(), "sbt-launch.jar must exist in sbtlib directory")
-    val sbtOpts = sys.env.get("SBT_OPTS").toList.flatMap(_.split(" "))
+    val sbtOpts = sys.env.get("SBT_OPTS").toList.flatMap(_.split(" ")).filterNot(_.trim.isEmpty)
     List("java",
          "-Dfile.encoding=UTF8",
          "-Xmx12G",
