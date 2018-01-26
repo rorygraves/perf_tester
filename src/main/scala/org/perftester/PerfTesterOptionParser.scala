@@ -41,20 +41,19 @@ object PerfTesterOptionParser {
           config.copy(username = username)
       }
 
-      opt[File]('a', "akkaDir")
+      opt[File]('a', "corpus")
         .required()
         .valueName("<dir>")
         .validate {
-          case d if !d.exists => Left("akka checkout directory must exist")
-          case d if !d.isDirectory =>
-            Left("akka checkout directory must be a directory")
-          case _ => Right(())
+          case d if !d.exists      => Left("corpus directory must exist")
+          case d if !d.isDirectory => Left("corpus directory must be a directory")
+          case _                   => Right(())
         }
         .action {
           case (x, c) =>
             c.copy(testDir = Path(x.getAbsolutePath))
         }
-        .text("The test project directory (akka) (required)")
+        .text("The test project directory (required)")
 
       opt[File]('r', "resultsDir")
         .required()
