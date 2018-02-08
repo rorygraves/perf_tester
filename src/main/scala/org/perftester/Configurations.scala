@@ -15,10 +15,10 @@ object Configurations {
     "distinctOptimization" -> List(
       TestConfig("00_baseline",
                  BuildFromGit("e12ac748cda072a42c67cfd0a0151947fc9c36e3"),
-                 extraArgs = List("-Yprofile-run-gc", "*")),
+                 extraArgs = List("-Yprofile-run-gc", "all")),
       TestConfig("00_optimized",
                  BuildFromGit("c87d90a215802fcf1ef863b68fda19e99f0c9a25"),
-                 extraArgs = List("-Yprofile-run-gc", "*"))
+                 extraArgs = List("-Yprofile-run-gc", "all"))
     ),
     "mikelatestRory" -> List(
       TestConfig("00_canon-baseline",
