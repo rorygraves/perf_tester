@@ -12,6 +12,14 @@ object Configurations {
       TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f")),
       TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"))
     ),
+    "distinctOptimization" -> List(
+      TestConfig("00_baseline",
+                 BuildFromGit("e12ac748cda072a42c67cfd0a0151947fc9c36e3"),
+                 extraArgs = List("-Yprofile-run-gc", "*")),
+      TestConfig("00_optimized",
+                 BuildFromGit("c87d90a215802fcf1ef863b68fda19e99f0c9a25"),
+                 extraArgs = List("-Yprofile-run-gc", "*"))
+    ),
     "mikelatestRory" -> List(
       TestConfig("00_canon-baseline",
                  BuildFromGit("cbd596339f2ead382be7cb625564a1217a207ca4"),
