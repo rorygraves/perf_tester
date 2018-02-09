@@ -13,8 +13,8 @@ object Configurations {
       TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"))
     ),
     "distinctOptimization" -> List(
-      TestConfig("00_baseline", BuildFromGit("e12ac748cda072a42c67cfd0a0151947fc9c36e3")),
-      TestConfig("00_optimized", BuildFromGit("c87d90a215802fcf1ef863b68fda19e99f0c9a25"))
+      TestConfig("00_baseline", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("00_optimized", BuildFromGit("2671541db1107497b1163e7cde337adc5abb19ef"))
     ),
     "mikelatestRory" -> List(
       TestConfig("00_canon-baseline",
