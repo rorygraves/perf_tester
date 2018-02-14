@@ -15,7 +15,6 @@ object PerfTesterOptionParser {
         .text("The number of iterations to run (default 50)")
 
       opt[String]('c', "config")
-        .required()
         .valueName("<configName>")
         .action {
           case (x, c) =>
@@ -24,6 +23,18 @@ object PerfTesterOptionParser {
             c.copy(config = x)
         }
         .text(s"The test configuration to run - one of ${Configurations.namesList} (required)")
+
+      opt[String]("configString")
+        .valueName("<configString>")
+        .action {
+          case (x, c) =>
+            c.copy(
+              configString = x,
+              config = "custom"
+            )
+        }
+        .text(
+          s"The test configuration string in format: 'id1;gitHash1;extraOption1,extraOption2,...|id2;gitHash2;extraOption1,extraOption2,...' ")
 
       opt[File]('s', "scalaCDir")
         .required()

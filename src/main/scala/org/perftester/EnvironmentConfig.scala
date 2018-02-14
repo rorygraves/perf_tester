@@ -11,6 +11,7 @@ case class EnvironmentConfig(
                              iterations: Int = 30,
                              // the name of the test config to run
                              config: String = "",
+                             configString: String = null,
                              analyseOnly: Boolean = false,
                              runWithDebug: Boolean = false,
                              overwriteResults: Boolean = true)

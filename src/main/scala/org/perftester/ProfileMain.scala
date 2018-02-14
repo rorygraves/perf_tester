@@ -78,11 +78,24 @@ object ProfileMain {
   // -XX:MaxInlineLevel=32
   //-XX:MaxInlineSize=35
 
+  def parseConfigString(configString: String): List[TestConfig] = {
+    configString.split("\\|").toList.map { configLine =>
+      println("configLine = " + configLine)
+      val id :: gitHash :: extraOptionsString = configLine.split(";").toList
+      val extraOptions                        = extraOptionsString.flatMap(_.split(",").toList)
+      TestConfig(id, BuildFromGit(gitHash), extraArgs = extraOptions)
+    }
+  }
+
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val commitsWithId = Configurations.configurations.getOrElse(
-      envConfig.config,
-      throw new IllegalArgumentException(s"Config ${envConfig.config} not found"))
+    val commitsWithId = Configurations.configurations
+      .get(envConfig.config)
+      .orElse(Option(envConfig.configString).map(parseConfigString))
+      .getOrElse {
+        println(s"[ERROR] Config ${envConfig.config} not found")
+        throw new IllegalArgumentException(s"Config ${envConfig.config} not found")
+      }
 
     val outputFolder = envConfig.outputDir / envConfig.username / envConfig.config
     Files.createDirectories(outputFolder.toNIO)
