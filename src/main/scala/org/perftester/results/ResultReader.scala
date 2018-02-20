@@ -25,22 +25,22 @@ object ResultReader {
         gc
     }
 
-    val background = (dataRows
+    val background = dataRows
       .collect {
         case row: BackgroundPhaseRow => row
-      })
-      .groupBy {
-        case row: BackgroundPhaseRow => (row.runId, row.phaseName)
+      }
+      .groupBy { row: BackgroundPhaseRow =>
+        (row.runId, row.phaseName)
       }
       .withDefaultValue(Nil)
 
-    val rows = (dataRows
+    val rows = dataRows
       .collect {
         case row: MainPhaseRow =>
           PhaseResults(row,
                        background((row.runId, row.phaseName)),
                        gcEvents(row.startNs, row.endNs))
-      })
+      }
       .sortBy(r => (r.iterationId, r.phaseId))
     val allIterations = (1 to iterations).to[SortedSet]
     val allPhases     = rows.groupBy(_.phaseName).keySet
