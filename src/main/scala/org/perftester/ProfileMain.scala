@@ -101,11 +101,17 @@ object ProfileMain {
     Files.createDirectories(outputFolder.toNIO)
     println("Output logging to " + outputFolder)
 
-    val results = commitsWithId map { testConfig =>
-      val results =
-        executeRuns(envConfig, outputFolder, testConfig, envConfig.iterations)
-      (testConfig, results)
-    }
+    val resultsZip: List[(TestConfig, RunResult)] =
+      commitsWithId.foldLeft(List.empty[(TestConfig, RunResult)]) {
+        case (all: List[(TestConfig, RunResult)], testConfig: TestConfig) =>
+          val plan = planRun(envConfig, outputFolder, testConfig, envConfig.iterations)
+          if (plan.runTest && all.nonEmpty)
+            TextRenderer.outputTextResults(envConfig, all.reverse)
+          val results = executeRuns(plan)
+
+          ((testConfig, results)) :: all
+      }
+    val results = resultsZip.reverse
 
     TextRenderer.outputTextResults(envConfig, results)
     HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
@@ -113,12 +119,12 @@ object ProfileMain {
 
   private val lastBuiltScalac = mutable.Map[Path, String]()
 
-  def executeRuns(
+  def planRun(
       envConfig: EnvironmentConfig,
       outputFolder: Path,
       testConfig: TestConfig,
       repeat: Int
-  ): RunResult = {
+  ): RunPlan = {
     val (dir: Path, reused) = testConfig match {
       case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
@@ -159,25 +165,39 @@ object ProfileMain {
 
     val runTest   = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
     val runScalac = !envConfig.analyseOnly && runTest && !reused
+    RunPlan(runTest, reused, dir, profileOutputFile, runScalac, testConfig, repeat, envConfig)
+  }
+  case class RunPlan(runTest: Boolean,
+                     reused: Boolean,
+                     dir: Path,
+                     profileOutputFile: Path,
+                     runScalac: Boolean,
+                     testConfig: TestConfig,
+                     repeats: Int,
+                     envConfig: EnvironmentConfig)
+
+  def executeRuns(
+      runPlan: RunPlan
+  ): RunResult = {
     val action = {
-      if (runTest && runScalac) "compile and test"
-      else if (runTest) "test"
+      if (runPlan.runTest && runPlan.runScalac) "compile and test"
+      else if (runPlan.runTest) "test"
       else "skip"
     }
-
     println(
       "\n\n******************************************************************************************************")
-    println(s"EXECUTING RUN ${testConfig.id} - ${testConfig.buildDefn}      $action")
+    println(
+      s"EXECUTING RUN ${runPlan.testConfig.id} - ${runPlan.testConfig.buildDefn}      $action")
     println(
       "******************************************************************************************************\n\n")
 
-    if (runTest) {
-      if (!reused)
-        buildScalaC(testConfig.buildDefn, dir)
-      executeTest(envConfig, testConfig, profileOutputFile, repeat)
+    if (runPlan.runTest) {
+      if (!runPlan.reused)
+        buildScalaC(runPlan.testConfig.buildDefn, runPlan.dir)
+      executeTest(runPlan)
     }
 
-    ResultReader.readResults(testConfig, profileOutputFile, repeat)
+    ResultReader.readResults(runPlan.testConfig, runPlan.profileOutputFile, runPlan.repeats)
   }
 
   def buildScalaC(buildDefn: BuildType, dir: Path): Unit = {
@@ -212,47 +232,44 @@ object ProfileMain {
 
   def buildDir(path: Path): Path = path / "build" / "pack"
 
-  def executeTest(envConfig: EnvironmentConfig,
-                  testConfig: TestConfig,
-                  profileOutputFile: Path,
-                  repeats: Int): Unit = {
-    val mkPackPath = testConfig.buildDefn match {
+  def executeTest(runPlan: RunPlan): Unit = {
+    val mkPackPath = runPlan.testConfig.buildDefn match {
       case bfd: BuildFromDir  => buildDir(bfd.path)
-      case BuildFromGit(_, _) => buildDir(envConfig.checkoutDir)
+      case BuildFromGit(_, _) => buildDir(runPlan.envConfig.checkoutDir)
     }
-    log.info("Logging stats to " + profileOutputFile)
-    if (Files.exists(profileOutputFile.toNIO))
-      Files.delete(profileOutputFile.toNIO)
+    log.info("Logging stats to " + runPlan.profileOutputFile)
+    if (Files.exists(runPlan.profileOutputFile.toNIO))
+      Files.delete(runPlan.profileOutputFile.toNIO)
     val extraArgsStr =
-      if (testConfig.extraArgs.nonEmpty)
-        testConfig.extraArgs.mkString("\"", "\",\"", "\",")
+      if (runPlan.testConfig.extraArgs.nonEmpty)
+        runPlan.testConfig.extraArgs.mkString("\"", "\",\"", "\",")
       else ""
 
     val debugArgs =
-      if (envConfig.runWithDebug)
+      if (runPlan.envConfig.runWithDebug)
         "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil
       else Nil
 
     val programArgs =
       s"++2.12.3=$mkPackPath" :: (
         List("Compile", "Test") map { cfg => // sbt woe
-          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","$profileOutputFile")"""
+          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","$runPlan.profileOutputFile")"""
         }
       )
 
-    val jvmArgs = debugArgs ::: testConfig.extraJVMArgs
+    val jvmArgs = debugArgs ::: runPlan.testConfig.extraJVMArgs
 
-    val dotfile = envConfig.testDir / ".perf_tester"
+    val dotfile = runPlan.envConfig.testDir / ".perf_tester"
     val sbtCommands =
       if (dotfile.toIO.exists()) read.lines(dotfile).toList.filterNot(_.trim.isEmpty)
       else "clean" :: "compile" :: Nil // slightly bogus default
 
-    SBTBotTestRunner.run(envConfig.testDir,
+    SBTBotTestRunner.run(runPlan.envConfig.testDir,
                          programArgs,
                          jvmArgs,
-                         repeats,
+                         runPlan.repeats,
                          sbtCommands,
-                         envConfig.runWithDebug)
+                         runPlan.envConfig.runWithDebug)
   }
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
