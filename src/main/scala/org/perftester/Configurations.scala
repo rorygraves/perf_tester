@@ -1,13 +1,19 @@
 package org.perftester
 
 object Configurations {
-
   def namesList: String = configurations.keys.mkString(",")
 
   val configurations: Map[String, List[TestConfig]] = Map(
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("ea64efaf0a71827128772585731df7635b871699"))
     ),
+    "Piotr" -> ((0 to 9).toList flatMap { x =>
+      List(
+        TestConfig(s"0${x}_quick", BuildFromDir("S:/scala/quick", false)),
+        TestConfig(s"0${x}_before", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+        TestConfig(s"0${x}_after", BuildFromGit("ac94829a4bb93bb5299564c340390b9be60932cd"))
+      )
+    }),
     "2121vs212x" -> List(
       TestConfig("00_2.12.2", BuildFromGit("21d12e9f5ec1ffe023f509848911476c1552d06f")),
       TestConfig("00_2.12.x", BuildFromGit("e1e8d050deb643ca56db1549e2e5a3114572a952"))
@@ -29,48 +35,123 @@ object Configurations {
       //      TestConfig("00_backend-3", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
       //      TestConfig("00_backend-4", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
     ),
-    "mikeGit" -> List(
-      TestConfig("00_before-pr", BuildFromGit("4a03b9920e67ae2bac47d4a02656791b0535c9d3")),
-      TestConfig("00_backend-S",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "-1", "-Yprofile-run-gc", "all")),
-      TestConfig("00_backend-0",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "0", "-Yprofile-run-gc", "all")),
-      TestConfig("00_backend-1",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "1", "-Yprofile-run-gc", "all")),
-      TestConfig("00_backend-2",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "2", "-Yprofile-run-gc", "all")),
-      TestConfig("00_backend-3",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "3", "-Yprofile-run-gc", "all")),
-      TestConfig("00_backend-4",
-                 BuildFromGit("9faa169cd96afd592a1e411a8a242d3cfaa49a97"),
-                 extraArgs = List("-YaddBackendThreads", "4", "-Yprofile-run-gc", "all"))
+    "mikeQuick" -> List(
+      TestConfig("00_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("00_after-pr", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("01_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("01_after-pr", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("02_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("02_after-pr", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("03_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("03_after-pr", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("00_bench", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("01_bench", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("02_bench", BuildFromDir("S:/scala/quick", false)),
+      TestConfig("03_bench", BuildFromDir("S:/scala/quick", false))
     ),
-    "mike" -> ((1 to 1).toList flatMap { x =>
+    "mike-Nil" -> ((0 to 9).toList flatMap { x =>
       List(
-        TestConfig(s"0${x}_before-pr", BuildFromGit("4a03b9920e67ae2bac47d4a02656791b0535c9d3")),
-//        TestConfig(s"0${x}_backend-S",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "-1", "-Yprofile-run-gc", "all")),
-//        TestConfig(s"0${x}_backend-0",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "0", "-Yprofile-run-gc", "all")),
-//        TestConfig(s"0${x}_backend-1",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "1", "-Yprofile-run-gc", "all")),
-//        TestConfig(s"0${x}_backend-2",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "2", "-Yprofile-run-gc", "all")),
-//        TestConfig(s"0${x}_backend-3",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "3", "-Yprofile-run-gc", "all")),
-//        TestConfig(s"0${x}_backend-4",
-//                   BuildFromDir("S:/scala/backend", false),
-//                   extraArgs = List("-YaddBackendThreads", "4", "-Yprofile-run-gc", "all"))
+        TestConfig(s"0${x}_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+        TestConfig(s"0${x}_Nil-Hash", BuildFromGit("cf6a1985d386ef4272e1b1c8b726be54796ae6ab")),
+        TestConfig(s"0${x}_Nil-Iterator", BuildFromGit("9fadc924d92a732bcf98a1dc020375f95013b660")),
+        TestConfig(s"0${x}_inline-tl", BuildFromGit("8bcab1b635d093661fce640b14f223eb754e7f71")),
+        TestConfig(s"0${x}_eq-Nil", BuildFromGit("88274b1feaaff8b6f64d5a80227aaf3d2ee2fde8")),
+        TestConfig(s"0${x}_List-hashcode", BuildFromGit("475b95b3626f51b063bbb00f1f12c206f478e91d"))
+      )
+    }),
+    "mike2-disk-final" -> ((0 to 2).toList flatMap { x =>
+      List(
+        TestConfig(s"0${x}_before-pr", BuildFromGit("09ebc826968be42faa488070826cd12a02b8f1e8")),
+        TestConfig(
+          s"0${x}_backend-1",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "1")
+        ),
+        TestConfig(
+          s"0${x}_backend-2",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "2")
+        ),
+        TestConfig(
+          s"0${x}_backend-4",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "4")
+        ),
+        TestConfig(
+          s"0${x}_backend-6",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "6")
+        ),
+        TestConfig(
+          s"0${x}_backend-8",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "8")
+        ),
+        TestConfig(
+          s"0${x}_backend-10",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "10")
+        ),
+        TestConfig(
+          s"0${x}_backend-12",
+          BuildFromDir("S:/scala/backend", false),
+          extraArgs = List("-Ybackend-parallelism", "12")
+        )
+      )
+    }),
+    "mike2" -> ((0 to 2).toList flatMap { x =>
+      List(
+        TestConfig(s"0${x}_before-pr", BuildFromGit("09ebc826968be42faa488070826cd12a02b8f1e8")),
+        TestConfig(
+          s"0${x}_backend-1",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "1", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-2",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "2", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-3",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "3", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-4",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "4", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-5",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "5", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-6",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "6", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-7",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "7", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-8",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "8", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-9",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "9", "-Yprofile-run-gc", "all")
+        ),
+        TestConfig(
+          s"0${x}_backend-10",
+          BuildFromGit("7e13231c56593c92fc01374146140bd5cbb56d79"),
+          extraArgs = List("-YaddBackendThreads", "10", "-Yprofile-run-gc", "all")
+        )
       )
     }),
     "mikeCheck" -> List(
