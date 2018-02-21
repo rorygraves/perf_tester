@@ -3,17 +3,21 @@ import java.io.File
 import sbt._
 import sbt.Keys._
 
-object TesterOutput {
+object Benchmarks {
   val libToTest =  SettingKey[ModuleID]("libToTest")
   val benchOutput = SettingKey[File]("benchOutput")
   val produceBench = TaskKey[File]("produceBench")
   val runBench = TaskKey[Unit]("runBench")
+  val enableScalacProfiler = SettingKey[File]("enableScalacProfiler")
+  val scalacProfilerOutput = SettingKey[File]("scalacProfilerOutput")
 
 
   def settings = Seq(
     // TODO separation between deps and benchmark
     libraryDependencies := Seq(libToTest.value.withSources(), "org.scala-lang" % "scala-compiler" % scalaVersion.value),
-    benchOutput := file(".") / "benchOut",
+    benchOutput := file(".") / "benchOut" / scalaVersion.value,
+    scalacProfilerOutput := benchOutput / "scalacProfilerOutput",
+    enableScalacProfiler := true,
     createBenchImpl,
     runBenchImpl
   )
@@ -23,7 +27,7 @@ object TesterOutput {
     Option(dest.listFiles()).foreach(_.foreach(IO.delete))
 
     // TODO add proper support for scala versions mangling
-    val libToTest = TesterOutput.libToTest.value.withName(TesterOutput.libToTest.value.name + "_2.12")
+    val libToTest = Benchmarks.libToTest.value.withName(Benchmarks.libToTest.value.name + "_2.12")
     def isLibToTest(m: ModuleReport) =
       m.module.organization == libToTest.organization && m.module.name == libToTest.name
 

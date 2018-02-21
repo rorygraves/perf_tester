@@ -3,6 +3,7 @@ package benchmarks
 import java.nio.file.{Files, Path, Paths}
 
 object Main extends App {
+  val startTime = System.currentTimeMillis()
   val rootPath: Path = Paths.get(".")
   val compilerSetup = new CompilerSetup(rootPath)
   val N = 25 // TODO make it configurable
@@ -19,7 +20,6 @@ object Main extends App {
     duration
   }
 
-  val startTime = System.currentTimeMillis()
   val times = (1 to N).map(runCompilation)
   val total = System.currentTimeMillis() - startTime
 
