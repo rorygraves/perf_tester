@@ -20,7 +20,7 @@ object TesterOutput {
 
   def createBenchImpl = produceBench := {
     val dest = benchOutput.value
-    dest.listFiles().foreach(IO.delete)
+    Option(dest.listFiles()).foreach(_.foreach(IO.delete))
 
     // TODO add proper support for scala versions mangling
     val libToTest = TesterOutput.libToTest.value.withName(TesterOutput.libToTest.value.name + "_2.12")
