@@ -253,7 +253,7 @@ object ProfileMain {
     val programArgs =
       s"++2.12.3=$mkPackPath" :: (
         List("Compile", "Test") map { cfg => // sbt woe
-          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","$runPlan.profileOutputFile")"""
+          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","${runPlan.profileOutputFile}")"""
         }
       )
 
@@ -282,7 +282,7 @@ object ProfileMain {
          "-XX:MaxPermSize=256m",
          "-XX:ReservedCodeCacheSize=128m",
          "-Dsbt.log.format=true",
-         "-mx12G") ::: extraJVMArgs ::: sbtOpts ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
+         "-mx2G") ::: extraJVMArgs ::: sbtOpts ::: List("-cp", sbt.toString, "xsbt.boot.Boot")
   }
 
   def runSbt(command: List[String], dir: Path, extraJVMArgs: List[String]): Unit = {

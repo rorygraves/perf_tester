@@ -35,15 +35,7 @@ object Configurations {
       //      TestConfig("00_backend-3", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "3", "-Yprofile-run-gc", "all")),
       //      TestConfig("00_backend-4", BuildFromGit("033be3f7053f91e87329f17e46265449534e0a09"), extraArgs = List("-YmaxAdditionalWriterThreads", "4", "-Yprofile-run-gc", "all"))
     ),
-    "mikeQuick" -> List(
-      TestConfig("00_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
-      TestConfig("00_after-pr", BuildFromDir("S:/scala/quick", false)),
-      TestConfig("01_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
-      TestConfig("01_after-pr", BuildFromDir("S:/scala/quick", false)),
-      TestConfig("02_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
-      TestConfig("02_after-pr", BuildFromDir("S:/scala/quick", false)),
-      TestConfig("03_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
-      TestConfig("03_after-pr", BuildFromDir("S:/scala/quick", false)),
+    "quick" -> List(
       TestConfig("00_bench", BuildFromDir("S:/scala/quick", false)),
       TestConfig("01_bench", BuildFromDir("S:/scala/quick", false)),
       TestConfig("02_bench", BuildFromDir("S:/scala/quick", false)),
