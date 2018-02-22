@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path, Paths}
 
 object Main extends App {
   val startTime = System.currentTimeMillis()
-  val rootPath: Path = Paths.get(".")
+  val rootPath: Path = Paths.get(args.headOption.getOrElse("."))
   val compilerSetup = new CompilerSetup(rootPath)
   val N = 25 // TODO make it configurable
   val M = 15

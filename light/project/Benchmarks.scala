@@ -8,7 +8,7 @@ object Benchmarks {
   val benchOutput = SettingKey[File]("benchOutput")
   val produceBench = TaskKey[File]("produceBench")
   val runBench = TaskKey[Unit]("runBench")
-  val enableScalacProfiler = SettingKey[File]("enableScalacProfiler")
+  val enableScalacProfiler = SettingKey[Boolean]("enableScalacProfiler")
   val scalacProfilerOutput = SettingKey[File]("scalacProfilerOutput")
 
 
@@ -16,14 +16,14 @@ object Benchmarks {
     // TODO separation between deps and benchmark
     libraryDependencies := Seq(libToTest.value.withSources(), "org.scala-lang" % "scala-compiler" % scalaVersion.value),
     benchOutput := file(".") / "benchOut" / scalaVersion.value,
-    scalacProfilerOutput := benchOutput / "scalacProfilerOutput",
+    scalacProfilerOutput := benchOutput.value / "scalacProfilerOutput",
     enableScalacProfiler := true,
     createBenchImpl,
     runBenchImpl
   )
 
   def createBenchImpl = produceBench := {
-    val dest = benchOutput.value
+    val dest = benchOutput.value.getAbsoluteFile
     Option(dest.listFiles()).foreach(_.foreach(IO.delete))
 
     // TODO add proper support for scala versions mangling
@@ -70,7 +70,7 @@ object Benchmarks {
     IO.write(bashScriptFile, scriptLines.mkString("\n"))
     bashScriptFile.setExecutable(true)
 
-    streams.value.log.success(s"Benchmark was created in ${bashScriptFile.toPath}")
+    streams.value.log.success(s"Benchmark was created in ${dest.toPath}")
 
     // TODO add code generation for params java options and other things
     bashScriptFile.getAbsoluteFile
