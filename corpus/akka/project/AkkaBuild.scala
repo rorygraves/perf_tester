@@ -24,7 +24,7 @@ object AkkaBuild {
   lazy val defaultSettings = 
     Seq[Setting[_]](
       // compile options
-      scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+      scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls"),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
       javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
