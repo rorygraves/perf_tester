@@ -16,7 +16,7 @@ object Benchmarks {
     // TODO separation between deps and benchmark
     libraryDependencies := Seq(libToTest.value.withSources(), "org.scala-lang" % "scala-compiler" % scalaVersion.value),
     benchOutput := file(".") / "benchOut" / scalaVersion.value,
-    scalacProfilerOutput := benchOutput.value / "scalacProfilerOutput",
+    scalacProfilerOutput := benchOutput.value  / "scalacProfilerOutput.txt",
     enableScalacProfiler := true,
     createBenchImpl,
     runBenchImpl
@@ -69,6 +69,13 @@ object Benchmarks {
 
     IO.write(bashScriptFile, scriptLines.mkString("\n"))
     bashScriptFile.setExecutable(true)
+
+	  if (enableScalacProfiler.value){
+		  IO.write(dest / "scalac.opts", Seq(
+			  "-Yprofile-enabled",
+			  s"-Yprofile-destination ${scalacProfilerOutput.value}"
+		  ).mkString("\n"))
+	  }
 
     streams.value.log.success(s"Benchmark was created in ${dest.toPath}")
 

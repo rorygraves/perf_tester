@@ -6,10 +6,10 @@ object Main extends App {
   val startTime = System.currentTimeMillis()
   val rootPath: Path = Paths.get(args.headOption.getOrElse("."))
   val compilerSetup = new CompilerSetup(rootPath)
-  val N = 25 // TODO make it configurable
-  val M = 15
+  val N = args.drop(1).headOption.map(_.toInt).getOrElse(25)
+	val M = args.drop(2).headOption.map(_.toInt).getOrElse(15)
 
-  val sources = IO.listSourcesIn(rootPath.resolve("sources")).map(_.toString)
+	val sources = IO.listSourcesIn(rootPath.resolve("sources")).map(_.toString)
 
   def runCompilation(n: Int): Long = {
     val run = new compilerSetup.global.Run
