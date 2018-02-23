@@ -9,14 +9,11 @@ object Benchmarks {
   val produceBench = TaskKey[File]("produceBench")
   val runBench = TaskKey[Unit]("runBench")
   val enableScalacProfiler = SettingKey[Boolean]("enableScalacProfiler")
-  val scalacProfilerOutput = SettingKey[File]("scalacProfilerOutput")
-
 
   def settings = Seq(
     // TODO separation between deps and benchmark
     libraryDependencies := Seq(libToTest.value.withSources(), "org.scala-lang" % "scala-compiler" % scalaVersion.value),
     benchOutput := file(".") / "benchOut" / scalaVersion.value,
-    scalacProfilerOutput := benchOutput.value  / "scalacProfilerOutput.txt",
     enableScalacProfiler := true,
     createBenchImpl,
     runBenchImpl
@@ -27,7 +24,7 @@ object Benchmarks {
     Option(dest.listFiles()).foreach(_.foreach(IO.delete))
 
     // TODO add proper support for scala versions mangling
-    val libToTest = Benchmarks.libToTest.value.withName(Benchmarks.libToTest.value.name + "_2.12")
+    val libToTest = Benchmarks.libToTest.value.withName(Benchmarks.libToTest.value.name + "_" + scalaBinaryVersion.value)
     def isLibToTest(m: ModuleReport) =
       m.module.organization == libToTest.organization && m.module.name == libToTest.name
 
@@ -55,7 +52,10 @@ object Benchmarks {
     val scalaLib = scalaDeps.filter(_.module.name == "scala-library")
     (cpDeps ++ scalaLib).flatMap(jarsIn).foreach(d => IO.copyFile(d, dest / "cpJars" / d.getName))
 
-    val appClasspath = (scalaJarsMapping.map(_._2) ++ Seq(destBechJar)).map(f => dest.toPath().relativize(f.toPath))
+    def relativize(file: File): File =
+      dest.toPath().relativize(file.toPath.toAbsolutePath).toFile
+
+    val appClasspath = (scalaJarsMapping.map(_._2) ++ Seq(destBechJar)).map(relativize)
 
     // TODO add more scripts (run bench M times etc.)
     val scriptLines = Seq(
@@ -73,7 +73,7 @@ object Benchmarks {
 	  if (enableScalacProfiler.value){
 		  IO.write(dest / "scalac.opts", Seq(
 			  "-Yprofile-enabled",
-			  s"-Yprofile-destination ${scalacProfilerOutput.value}"
+			  s"-Yprofile-destination ${relativize(dest / "output" / "profile.txt")}"
 		  ).mkString("\n"))
 	  }
 

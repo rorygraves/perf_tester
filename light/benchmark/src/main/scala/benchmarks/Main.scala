@@ -5,8 +5,8 @@ import java.nio.file.{Files, Path, Paths}
 object Main extends App {
   val startTime = System.currentTimeMillis()
   val rootPath: Path = Paths.get(args.headOption.getOrElse("."))
-  val compilerSetup = new CompilerSetup(rootPath)
-  val N = args.drop(1).headOption.map(_.toInt).getOrElse(25)
+  val compilerSetup = new CompilerSetup(rootPath, args.drop(3).toList)
+  val N = args.drop(1).headOption.map(_.toInt).getOrElse(2) // TODO change it!
 	val M = args.drop(2).headOption.map(_.toInt).getOrElse(15)
 
 	val sources = IO.listSourcesIn(rootPath.resolve("sources")).map(_.toString)

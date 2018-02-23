@@ -11,10 +11,11 @@ import scala.tools.nsc.reporters.Reporter
 import scala.util.Try
 import collection.JavaConverters._
 
-case class CompilerSetup(rootPath: Path) {
+case class CompilerSetup(rootPath: Path, providedScalacOptions: List[String]) {
   val outputDir: Path = rootPath.resolve("output")
   val currentOutput: Path = outputDir.resolve("classes")
-	val scalacOptions = Try(Files.readAllLines(rootPath.resolve("scalac.opts")).asScala.toList.flatMap(_.split(" +")))
+	val scalacOptions = providedScalacOptions ++
+    Try(Files.readAllLines(rootPath.resolve("scalac.opts")).asScala.flatMap(_.split(" +"))).getOrElse(Nil)
 
   IO.cleanDir(outputDir)
   Files.createDirectories(currentOutput)
@@ -37,6 +38,6 @@ case class CompilerSetup(rootPath: Path) {
     settings.outputDirs.setSingleOutput(currentOutput.toString)
     settings.classpath.append(cpJars.mkString(File.pathSeparator))
 	  println(s"Scalac Opts: $scalacOptions")
-	  scalacOptions.foreach(opts => settings.processArguments(opts, processAll = true))
+    settings.processArguments(scalacOptions, processAll = true)
   }
 }
