@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props
 import akka.io.Tcp._
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
-import ammonite.ops.{Path, read}
+import ammonite.ops.{Path, FilePath, read, up}
 import com.fasterxml.jackson.core.JsonParseException
 import org.perftester.ProfileMain
 import org.perftester.sbtbot.SBTBot._
@@ -109,8 +109,9 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
     try {
       val activeJsonContests = read ! jsonPath
       val activeJson         = Json.parse(activeJsonContests)
-      val tokenFilePath      = (activeJson \ "tokenfilePath").as[String]
-      Right(tokenFilePath)
+      val socketPath         = FilePath((activeJson \ "uri").as[String].replace("local://", ""))
+      val tokenFilePath      = socketPath / up / "token.json"
+      Right(tokenFilePath.toString)
     } catch {
       case _: NoSuchFileException =>
         Left(
@@ -156,8 +157,8 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
         log.error(s"Failed to initialise connection to SBT - error: $errorMsg")
         context.stop(self)
       case Right((token, socketAddr)) =>
-        IO(Tcp) ! Connect(socketAddr)
         context.become(serverConnectReceive(token))
+        IO(Tcp) ! Connect(socketAddr)
     }
   }
 
@@ -169,7 +170,8 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
   var seenInitPrompt = false
 
   def serverConnectReceive(token: String): Receive = {
-    case CommandFailed(_: Connect) =>
+    case cf @ CommandFailed(_: Connect) =>
+      println("FAILED: " + cf.toString)
       context.parent ! SBTError("Failed to connect")
       context stop self
     case c @ Connected(remote, local) ⇒
