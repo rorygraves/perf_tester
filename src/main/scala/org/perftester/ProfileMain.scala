@@ -3,13 +3,11 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, read, Command, Path, Shellout, ShelloutException}
+import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.mutable
 
 object ProfileMain {
 
@@ -52,6 +50,7 @@ object ProfileMain {
         Distribution(raw.head, raw.last, mean)
       }
     }
+
     val wallClockTimeAvg    = distribution(_.wallClockTimeMS)
     val allWallClockTimeAvg = distribution(_.allWallClockTimeMS)
     val allCpuTimeAvg       = distribution(_.cpuTimeMS)
@@ -117,46 +116,42 @@ object ProfileMain {
     HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
   }
 
-  private val lastBuiltScalac = mutable.Map[Path, String]()
-
   def planRun(
       envConfig: EnvironmentConfig,
       outputFolder: Path,
       testConfig: TestConfig,
       repeat: Int
   ): RunPlan = {
-    val (dir: Path, reused) = testConfig match {
+    val (sourceDir: Path, reuseScalac: Boolean, scalacPackDir: Path) = testConfig match {
       case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
-        val reused    = lastBuiltScalac.get(targetDir).contains(sha)
-        lastBuiltScalac(targetDir) = sha
-        (targetDir, reused)
+        val packDir   = envConfig.scalacBuildCache / sha
+        val reused    = Files.exists(packDir / flag toNIO)
+        (targetDir, reused, packDir)
       case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _) =>
         val sourceDir = bfd.path
+        val targetBuild = buildDir(sourceDir)
         val reuse = {
-          if (lastBuiltScalac.contains(sourceDir)) {
-            println(s"dir reused - already used")
-            true
+          if (!Files.exists(targetBuild.toNIO)) {
+            println(s"dir NOT reused - no build dir")
+            false
+          } else if (rebuild) {
+            println(s"dir NOT reused - as rebuild requested")
+            false
+          } else if (!Files.exists(targetBuild / flag toNIO)) {
+            println(s"dir NOT reused - no flag file")
+            false
           } else {
-            val targetBuild = buildDir(sourceDir)
-            if (!Files.exists(targetBuild.toNIO)) {
-              println(s"dir NOT reused - no build dir")
-              false
-            } else if (rebuild) {
-              println(s"dir NOT reused - as rebuild requested")
-              false
-            } else {
-              val sourceDT = Utils.lastChangedDate(sourceDir / "src")
-              val buildDT  = Utils.lastChangedDate(targetBuild)
-              println(s"latest file times \nsource $sourceDT\nbuild  $buildDT")
-              val reuse = sourceDT._1.isBefore(buildDT._1)
-              println(s"dir reused = $reuse - based on file times")
-              reuse
-            }
+            val sourceDT = Utils.lastChangedDate(sourceDir / "src")
+            val buildDT  = Utils.lastChangedDate(targetBuild)
+            println(s"latest file times \nsource $sourceDT\nbuild  $buildDT")
+            val reuse = sourceDT._1.isBefore(buildDT._1)
+            println(s"dir reused = $reuse - based on file times")
+            reuse
           }
         }
 
-        (sourceDir, reuse)
+        (sourceDir, reuse, targetBuild)
     }
 
     val profileOutputFile = outputFolder / s"run_${testConfig.id}.csv"
@@ -164,12 +159,22 @@ object ProfileMain {
     val exists = Files.exists(profileOutputFile.toNIO)
 
     val runTest   = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
-    val runScalac = !envConfig.analyseOnly && runTest && !reused
-    RunPlan(runTest, reused, dir, profileOutputFile, runScalac, testConfig, repeat, envConfig)
+    val runScalac = !envConfig.analyseOnly && runTest && !reuseScalac
+    RunPlan(runTest,
+            reuseScalac,
+            sourceDir,
+            scalacPackDir,
+            profileOutputFile,
+            runScalac,
+            testConfig,
+            repeat,
+            envConfig)
   }
+
   case class RunPlan(runTest: Boolean,
-                     reused: Boolean,
-                     dir: Path,
+                     canReuseScalac: Boolean,
+                     scalaSourceDir: Path,
+                     scalaPackDir: Path,
                      profileOutputFile: Path,
                      runScalac: Boolean,
                      testConfig: TestConfig,
@@ -192,22 +197,24 @@ object ProfileMain {
       "******************************************************************************************************\n\n")
 
     if (runPlan.runTest) {
-      if (!runPlan.reused)
-        buildScalaC(runPlan.testConfig.buildDefn, runPlan.dir)
+      if (runPlan.runScalac)
+        buildScalaC(runPlan.testConfig.buildDefn, runPlan.scalaSourceDir, runPlan.scalaPackDir)
+      //flag the build was used
+      Utils.touch(runPlan.scalaPackDir toNIO)
       executeTest(runPlan)
     }
 
     ResultReader.readResults(runPlan.testConfig, runPlan.profileOutputFile, runPlan.repeats)
   }
 
-  def buildScalaC(buildDefn: BuildType, dir: Path): Unit = {
+  def buildScalaC(buildDefn: BuildType, sourceDir: Path, scalaPackDir: Path): Unit = {
     buildDefn match {
       case BuildFromGit(hash, _) =>
         try {
-          log.info(s"Running: git fetch    (in $dir)")
-          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(dir)
-          log.info(s"Running: git reset --hard $hash    (in $dir)")
-          %%("git", "reset", "--hard", hash)(dir)
+          log.info(s"Running: git fetch    (in $sourceDir)")
+          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(sourceDir)
+          log.info(s"Running: git reset --hard $hash    (in $sourceDir)")
+          %%("git", "reset", "--hard", hash)(sourceDir)
         } catch {
           case t: ShelloutException =>
             if (t.result.err.string.contains("fatal: Could not parse object") ||
@@ -216,27 +223,27 @@ object ProfileMain {
             log.error(s"Failed to execute git fetch/reset to $hash", t)
         }
       case bfd: BuildFromDir =>
-        log.info("BuildFromDir selected - build skipped")
+        log.info("BuildFromDir selected - fetch skipped")
     }
 
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("BUILD DISABLED")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    can we get run of runsbt?
-    log.info(s"Building compiler in $dir")
-    //    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
-    runSbt(List("setupPublishCore", "dist/mkPack"), dir, Nil)
+    log.info(s"Building compiler in $sourceDir")
+
+    runSbt(List("setupPublishCore", "dist/mkPack"), sourceDir, Nil)
+    if (scalaPackDir != buildDir(sourceDir)) {
+      Utils.deleteDir(scalaPackDir toNIO)
+      Utils.copy(buildDir(sourceDir) toNIO, scalaPackDir toNIO)
+    }
+    Utils.touch(scalaPackDir / flag toNIO)
   }
+
+  //flag file to indicate that the mkPack completed successfully
+  val flag = "mkPack.success"
 
   def buildDir(path: Path): Path = path / "build" / "pack"
 
   def executeTest(runPlan: RunPlan): Unit = {
-    val mkPackPath = runPlan.testConfig.buildDefn match {
-      case bfd: BuildFromDir  => buildDir(bfd.path)
-      case BuildFromGit(_, _) => buildDir(runPlan.envConfig.checkoutDir)
-    }
+    val mkPackPath = runPlan.scalaPackDir
+
     log.info("Logging stats to " + runPlan.profileOutputFile)
     if (Files.exists(runPlan.profileOutputFile.toNIO))
       Files.delete(runPlan.profileOutputFile.toNIO)
@@ -251,7 +258,7 @@ object ProfileMain {
       else Nil
 
     val programArgs =
-      s"++2.12.3=$mkPackPath" :: (
+      s"++2.12.4=$mkPackPath" :: (
         List("Compile", "Test") map { cfg => // sbt woe
           s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","${runPlan.profileOutputFile}")"""
         }
