@@ -1,7 +1,7 @@
 package org.preftester
 
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
 import com.typesafe.config.{ConfigFactory, ConfigObject, ConfigParseOptions}
 import org.perftester.results.renderer.TextRenderer
@@ -57,9 +57,12 @@ object Main extends App {
           val output = Process(cmd, location.toFile, env:_*).!!
           println(output)
           val resultsDir = location.resolve("output").resolve("profile.txt")
-          val result = ResultReader.readResults(name, resultsDir, N)
-          val previous = all.getOrElse(name, Vector.empty)
-          all + (name -> (previous :+ result))
+          if (Files.exists(resultsDir)){
+            val result = ResultReader.readResults(name, resultsDir, N)
+            val previous = all.getOrElse(name, Vector.empty)
+            all + (name -> (previous :+ result))
+          } else all
+
       }
   }
   results.foreach{ case (name, results) =>

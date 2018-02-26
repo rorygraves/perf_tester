@@ -14,7 +14,7 @@ object Benchmarks {
     // TODO separation between deps and benchmark
     libraryDependencies := Seq(libToTest.value.withSources(), "org.scala-lang" % "scala-compiler" % scalaVersion.value),
     benchOutput := file(".") / "benchOut" / scalaVersion.value,
-    enableScalacProfiler := true,
+    enableScalacProfiler := false,
     createBenchImpl,
     runBenchImpl
   )
