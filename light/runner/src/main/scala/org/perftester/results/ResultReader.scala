@@ -8,7 +8,7 @@ import scala.collection.SortedSet
 import collection.JavaConverters._
 
 object ResultReader {
-  def readResults(file: Path, iterations: Int): RunResult = {
+  def readResults(id: String, file: Path, iterations: Int): RunResult = {
     val lines    = Files.readAllLines(file).asScala
     val asValues = lines.map(_.split(',').map(_.trim).toList).toList
     val info = asValues.collectFirst {
@@ -44,6 +44,7 @@ object ResultReader {
       }
       .sortBy(r => (r.iterationId, r.phaseId))
     val allPhases     = rows.groupBy(_.phaseName).keySet
-    RunResult(rows, allPhases)
+
+    RunResult(id, rows, allPhases)
   }
 }

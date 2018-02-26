@@ -1,6 +1,7 @@
 import java.io.File
 import java.nio.file.Paths
 
+import Benchmarks.benchOutput
 import com.typesafe.config.{Config, ConfigFactory, ConfigObject}
 import sbt._
 import sbt.Keys._
@@ -23,6 +24,7 @@ object Runner {
   val scalaRepoRef = SettingKey[String]("scalaRepoRef")
   val scalaRepoLocation = SettingKey[File]("scalaRepoLocation")
   val installScalaCommits = TaskKey[Unit]("installScalaCommits")
+  val generateBenchmarkRunner = TaskKey[Unit]("generateBenchmarkRunner")
   val configurationPath = SettingKey[String]("configurationPath")
   val benchmarks = SettingKey[Map[String, Configuration]]("benchmarks")
   val iterations = TaskKey[Int]("iterations")
@@ -34,6 +36,7 @@ object Runner {
     scalaRepoRef := "git@github.com:rorygraves/scalac_perf.git",
     implementInterations,
     implementConfigs,
+    implementGenerateBenchmarkRunner,
     scalaVersion := { benchmarks.value.head match {
       case (_, c) if c.scalaVersion.startsWith("2.12") =>
         "2.12.4"
@@ -83,5 +86,27 @@ object Runner {
         scalaOptions = read("scalaOptions", "")
       )
   }(collection.breakOut)
+
+  def implementGenerateBenchmarkRunner = generateBenchmarkRunner := {
+    val benchmarkDir = file(".") / "benchOut"
+    val jars = dependencyClasspath.in(Compile).value.map(_.data) :+ Keys.`package`.in(Compile).value
+    val jarsMapping = jars.map(f => f ->  benchmarkDir / "jars" / f.getName)
+    jarsMapping.foreach(f => IO.copyFile(f._1,f._2))
+    IO.copyFile(Paths.get(configurationPath.value).toFile, benchmarkDir / "benchmark.conf")
+
+    val appClasspath = jarsMapping.map(_._2).map(f => benchmarkDir.toPath.relativize(f.toPath))
+
+    val scriptLines = Seq(
+      "#!/bin/bash",
+      "cd `dirname $0`",
+      s"java -cp ${appClasspath.mkString(File.pathSeparator)} org.preftester.Main $$@"
+    )
+
+
+    val bashScriptFile = benchmarkDir / "run.sh"
+
+    IO.write(bashScriptFile, scriptLines.mkString("\n"))
+    bashScriptFile.setExecutable(true)
+  }
 
 }

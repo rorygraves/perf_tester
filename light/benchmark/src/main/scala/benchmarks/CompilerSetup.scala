@@ -37,7 +37,6 @@ case class CompilerSetup(rootPath: Path, providedScalacOptions: List[String]) {
   def configure(settings: Settings): Unit = {
     settings.outputDirs.setSingleOutput(currentOutput.toString)
     settings.classpath.append(cpJars.mkString(File.pathSeparator))
-	  println(s"Scalac Opts: $scalacOptions")
     settings.processArguments(scalacOptions, processAll = true)
   }
 }

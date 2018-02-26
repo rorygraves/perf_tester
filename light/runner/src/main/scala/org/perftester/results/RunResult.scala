@@ -1,6 +1,7 @@
 package org.perftester.results
 
-case class RunResult(rawData: Seq[PhaseResults],
+case class RunResult(id: String,
+                     rawData: Seq[PhaseResults],
                      phases: Set[String]) {
 
   rawData foreach { r =>

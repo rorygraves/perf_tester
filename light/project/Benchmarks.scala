@@ -24,12 +24,14 @@ object Benchmarks {
     Option(dest.listFiles()).foreach(_.foreach(IO.delete))
 
     // TODO add proper support for scala versions mangling
-    val libToTest = Benchmarks.libToTest.value.withName(Benchmarks.libToTest.value.name + "_" + scalaBinaryVersion.value)
+    val libToTest = Benchmarks.libToTest.value.withName(Benchmarks.libToTest.value.name)
     def isLibToTest(m: ModuleReport) =
       m.module.organization == libToTest.organization && m.module.name == libToTest.name
 
     def isScalaDep(m: ModuleReport) = m.module.organization == "org.scala-lang"
     def compileConfig(u: UpdateReport) = u.configurations.find(_.configuration.name == "compile").get
+
+    println(compileConfig(updateClassifiers.value).modules.map(_.module))
 
     val sourceJar =
       compileConfig(updateClassifiers.value).modules.find(isLibToTest).get.artifacts.collectFirst {
@@ -61,7 +63,7 @@ object Benchmarks {
     val scriptLines = Seq(
       "#!/bin/bash",
       "cd `dirname $0`",
-      s"java -cp ${appClasspath.mkString(File.pathSeparator)} benchmarks.Main"
+      s"java -cp ${appClasspath.mkString(File.pathSeparator)} benchmarks.Main $$@"
     )
 
 

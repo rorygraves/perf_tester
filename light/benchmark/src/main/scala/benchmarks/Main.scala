@@ -10,15 +10,23 @@ object Main extends App {
 	val M = args.drop(2).headOption.map(_.toInt).getOrElse(15)
 
 	val sources = IO.listSourcesIn(rootPath.resolve("sources")).map(_.toString)
+  val removeAt = N - M
+  val profileFile = compilerSetup.outputDir.resolve("profile.txt") // TODO always add this!
 
   def runCompilation(n: Int): Long = {
+
     val run = new compilerSetup.global.Run
     val start = System.currentTimeMillis()
     run.compile(sources)
     val duration = System.currentTimeMillis() - start
     Files.move(compilerSetup.currentOutput, compilerSetup.currentOutput.resolveSibling(s"classes_$n"))
+    if (n == removeAt && Files.exists(profileFile)) {
+      Files.move(profileFile, profileFile.resolveSibling("initial-profile.txt"))
+    }
     duration
   }
+
+  println(s"Running benchmark with (N=$N, M=$M) in $rootPath with scalac options: ${compilerSetup.scalacOptions}")
 
   val times = (1 to N).map(runCompilation)
   val total = System.currentTimeMillis() - startTime
@@ -27,7 +35,7 @@ object Main extends App {
   def asSec(d: Double) = d  / 1000
 
   val overhead = asSec(total - times.sum)
-  val lastMAvg = asSec(times.takeRight(M).sum / M.toDouble)
+  val lastMAvg = asSec(times.takeRight(M).sum / M.toDouble) // TODO support cases where M > N
   val allAvg = asSec(times.sum / N.toDouble)
 
   // TODO proper output format
