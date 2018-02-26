@@ -7,6 +7,7 @@ initialize := {
 }
 
 akka.AkkaBuild.buildSettings
+Global / serverConnectionType := ConnectionType.Tcp
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actor 

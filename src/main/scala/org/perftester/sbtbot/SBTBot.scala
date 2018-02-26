@@ -109,9 +109,8 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
     try {
       val activeJsonContests = read ! jsonPath
       val activeJson         = Json.parse(activeJsonContests)
-      val socketPath         = FilePath((activeJson \ "uri").as[String].replace("local://", ""))
-      val tokenFilePath      = socketPath / up / "token.json"
-      Right(tokenFilePath.toString)
+      val tokenFilePath      = (activeJson \ "tokenfilePath").as[String]
+      Right(tokenFilePath)
     } catch {
       case _: NoSuchFileException =>
         Left(
