@@ -250,12 +250,10 @@ object ProfileMain {
         "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil
       else Nil
 
-    val programArgs =
-      s"++2.12.3=$mkPackPath" :: (
-        List("Compile", "Test") map { cfg => // sbt woe
-          s"""set scalacOptions in $cfg ++= List($extraArgsStr"-Yprofile-destination","${runPlan.profileOutputFile}")"""
-        }
-      )
+    val programArgs = List(
+      s"++2.12.3=$mkPackPath",
+      s"""set scalacOptions in ThisBuild ++= List($extraArgsStr"-Yprofile-destination","${runPlan.profileOutputFile}")"""
+    )
 
     val jvmArgs = debugArgs ::: runPlan.testConfig.extraJVMArgs
 
