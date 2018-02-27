@@ -12,7 +12,12 @@ object PerfTesterOptionParser {
 
       opt[Int]('i', "iterations")
         .action((x, c) => c.copy(iterations = x))
-        .text("The number of iterations to run (default 50)")
+        .text(
+          s"The number of iterations to run in each VM (default ${EnvironmentConfig().iterations})")
+
+      opt[Int]('p', "processes")
+        .action((x, c) => c.copy(processes = x))
+        .text(s"The number of processes (VMs) to run(default ${EnvironmentConfig().processes})")
 
       opt[String]('c', "config")
         .valueName("<configName>")

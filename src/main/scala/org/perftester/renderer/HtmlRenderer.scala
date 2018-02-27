@@ -5,14 +5,13 @@ import java.nio.file.Files
 import ammonite.ops._
 import ammonite.ops.Path
 import org.perftester.{EnvironmentConfig, TestConfig}
-import org.perftester.results.RunResult
-
+import org.perftester.results.{RunDetails, RunResult}
 import scalatags.Text.all._
 
 object HtmlRenderer {
   def outputHtmlResults(outputFolder: Path,
                         envConfig: EnvironmentConfig,
-                        results: Seq[(TestConfig, RunResult)]): Unit = {
+                        results: Iterable[RunDetails]): Unit = {
 
     val content = html(
       head(

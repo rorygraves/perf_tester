@@ -2,14 +2,13 @@ package org.perftester.renderer
 
 import org.perftester.ProfileMain.printAggResults
 import org.perftester.{EnvironmentConfig, TestConfig}
-import org.perftester.results.{PhaseResults, RunResult}
+import org.perftester.results.{PhaseResults, RunDetails, RunResult}
 import org.perftester.results.rows.MainPhaseRow
 
 import scala.collection.mutable
 
 object TextRenderer {
-  def outputTextResults(envConfig: EnvironmentConfig,
-                        results: Seq[(TestConfig, RunResult)]): Unit = {
+  def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = {
     def heading(title: String) {
       println(
         f"-----\n$title\n${"Run Name"}%25s\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
@@ -50,11 +49,11 @@ object TextRenderer {
 
     heading("ALL")
     results.foreach {
-      case (config, configResult) =>
-        printAggResults(config, allPhases(configResult.rawData), 1)
+      case RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) =>
+        printAggResults(testConfig, allPhases(rawData), 1)
     }
     val phases: mutable.LinkedHashSet[String] =
-      results.flatMap(r => r._2.phases)(scala.collection.breakOut)
+      results.toList.flatMap(_.runResult.phases)(scala.collection.breakOut)
 
     if (envConfig.iterations > 10) {
       (10 until (envConfig.iterations, 10)) foreach { i =>
@@ -64,29 +63,33 @@ object TextRenderer {
           "---------------------------------------------------------------------------------------------------")
         heading(s"after $i 90%")
         results.foreach {
-          case (config, configResult) =>
-            val skipped = configResult.rawData.dropWhile(_.iterationId <= i)
-            printAggResults(config, allPhases(skipped), 0.9)
+          case RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) =>
+            val skipped = rawData.dropWhile(_.iterationId <= i)
+            printAggResults(testConfig, allPhases(skipped), 0.9)
         }
 
         for (phase <- phases) {
           heading(s"after $i 90%, phase $phase")
-          for { (config, configResult) <- results } {
-            val skipped = configResult.rawData.filter {
+          for {
+            RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) <- results
+          } {
+            val skipped = rawData.filter {
               case row => row.iterationId > i && row.phaseName == phase
             }
 
-            printAggResults(config, skipped, 0.9)
+            printAggResults(testConfig, skipped, 0.9)
           }
         }
         for (phase <- phases) {
           heading(s"after $i 90%, phase $phase no GC")
-          for { (config, configResult) <- results } {
-            val skipped = configResult.rawData.filter {
+          for {
+            RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) <- results
+          } {
+            val skipped = rawData.filter {
               case row => row.iterationId > i && row.phaseName == phase && row.gcTimeMS == 0
             }
 
-            printAggResults(config, skipped, 0.9)
+            printAggResults(testConfig, skipped, 0.9)
           }
         }
       }

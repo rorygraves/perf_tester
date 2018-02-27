@@ -3,12 +3,13 @@ package org.perftester
 import java.io.File
 import java.nio.file.Files
 
-import ammonite.ops.{%%, read, Command, Path, Shellout, ShelloutException}
+import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
-import org.perftester.results.{PhaseResults, ResultReader, RunResult}
+import org.perftester.results.{PhaseResults, ResultReader, RunDetails, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.immutable.SortedSet
 import scala.collection.mutable
 
 object ProfileMain {
@@ -101,17 +102,20 @@ object ProfileMain {
     Files.createDirectories(outputFolder.toNIO)
     println("Output logging to " + outputFolder)
 
-    val resultsZip: List[(TestConfig, RunResult)] =
-      commitsWithId.foldLeft(List.empty[(TestConfig, RunResult)]) {
-        case (all: List[(TestConfig, RunResult)], testConfig: TestConfig) =>
-          val plan = planRun(envConfig, outputFolder, testConfig, envConfig.iterations)
-          if (plan.runTest && all.nonEmpty)
-            TextRenderer.outputTextResults(envConfig, all.reverse)
-          val results = executeRuns(plan)
+    val results: SortedSet[RunDetails] = {
+      var all = SortedSet.empty[RunDetails]
+      for (vmId                 <- 1 to envConfig.processes;
+           (testConfig, testId) <- commitsWithId.zipWithIndex) {
 
-          ((testConfig, results)) :: all
+        val plan = planRun(envConfig, outputFolder, testConfig, vmId, envConfig.iterations)
+        if (plan.runTest && all.nonEmpty)
+          TextRenderer.outputTextResults(envConfig, all)
+        val results = executeRuns(plan)
+
+        all += RunDetails(vmId, testId, results)
       }
-    val results = resultsZip.reverse
+      all
+    }
 
     TextRenderer.outputTextResults(envConfig, results)
     HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
@@ -123,6 +127,7 @@ object ProfileMain {
       envConfig: EnvironmentConfig,
       outputFolder: Path,
       testConfig: TestConfig,
+      vm: Int,
       repeat: Int
   ): RunPlan = {
     val (dir: Path, reused) = testConfig match {
@@ -159,15 +164,16 @@ object ProfileMain {
         (sourceDir, reuse)
     }
 
-    val profileOutputFile = outputFolder / s"run_${testConfig.id}.csv"
+    val profileOutputFile = outputFolder / s"run_${vm}_${testConfig.id}.csv"
 
     val exists = Files.exists(profileOutputFile.toNIO)
 
     val runTest   = !envConfig.analyseOnly && (!exists || envConfig.overwriteResults || testConfig.buildDefn.forceOverwriteResults)
     val runScalac = !envConfig.analyseOnly && runTest && !reused
-    RunPlan(runTest, reused, dir, profileOutputFile, runScalac, testConfig, repeat, envConfig)
+    RunPlan(runTest, vm, reused, dir, profileOutputFile, runScalac, testConfig, repeat, envConfig)
   }
   case class RunPlan(runTest: Boolean,
+                     vm: Int,
                      reused: Boolean,
                      dir: Path,
                      profileOutputFile: Path,
@@ -187,7 +193,7 @@ object ProfileMain {
     println(
       "\n\n******************************************************************************************************")
     println(
-      s"EXECUTING RUN ${runPlan.testConfig.id} - ${runPlan.testConfig.buildDefn}      $action")
+      s"EXECUTING RUN #${runPlan.vm} ${runPlan.testConfig.id} - ${runPlan.testConfig.buildDefn}      $action")
     println(
       "******************************************************************************************************\n\n")
 
@@ -219,14 +225,7 @@ object ProfileMain {
         log.info("BuildFromDir selected - build skipped")
     }
 
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("BUILD DISABLED")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    log.info("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    //    can we get run of runsbt?
     log.info(s"Building compiler in $dir")
-    //    runSbt(List("setupPublishCore", "dist/mkPack", "publishLocal"), dir, Nil)
     runSbt(List("setupPublishCore", "dist/mkPack"), dir, Nil)
   }
 
