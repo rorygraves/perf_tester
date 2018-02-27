@@ -8,6 +8,7 @@ case class EnvironmentConfig(
                              checkoutDir: Path = Path.home,
                              testDir: Path = Path.home,
                              outputDir: Path = Path.home,
+                             scalacBuildCache: Path = Path.home / "scalacBuildCache",
                              iterations: Int = 30,
                              processes: Int = 1,
                              // the name of the test config to run
