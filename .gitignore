@@ -17,3 +17,7 @@ project/plugins/project/
 # Scala-IDE specific
 .scala_dependencies
 .worksheet
+
+# Light tester output
+light/benchOut/
+light/scalaRepo/
