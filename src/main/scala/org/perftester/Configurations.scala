@@ -7,6 +7,12 @@ object Configurations {
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("ea64efaf0a71827128772585731df7635b871699"))
     ),
+    "ownerChain" -> ((0 to 5).toList flatMap { x =>
+      List(
+        TestConfig(s"0${x}_baseline", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+        TestConfig(s"0${x}_ownerChain", BuildFromGit("18fba7f906523dc9363dde1366c4f68d1cbe8954"))
+      )
+    }),
     "Piotr" -> ((0 to 9).toList flatMap { x =>
       List(
         TestConfig(s"0${x}_quick", BuildFromDir("S:/scala/quick", false)),
