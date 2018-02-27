@@ -47,16 +47,14 @@ object Configurations {
       TestConfig("02_bench", BuildFromDir("S:/scala/quick", false)),
       TestConfig("03_bench", BuildFromDir("S:/scala/quick", false))
     ),
-    "mike-Nil" -> ((0 to 9).toList flatMap { x =>
-      List(
-        TestConfig(s"0${x}_before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
-        TestConfig(s"0${x}_Nil-Hash", BuildFromGit("cf6a1985d386ef4272e1b1c8b726be54796ae6ab")),
-        TestConfig(s"0${x}_Nil-Iterator", BuildFromGit("9fadc924d92a732bcf98a1dc020375f95013b660")),
-        TestConfig(s"0${x}_inline-tl", BuildFromGit("8bcab1b635d093661fce640b14f223eb754e7f71")),
-        TestConfig(s"0${x}_eq-Nil", BuildFromGit("88274b1feaaff8b6f64d5a80227aaf3d2ee2fde8")),
-        TestConfig(s"0${x}_List-hashcode", BuildFromGit("475b95b3626f51b063bbb00f1f12c206f478e91d"))
-      )
-    }),
+    "mike-Nil" -> List(
+      TestConfig("before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("Nil-Hash", BuildFromGit("cf6a1985d386ef4272e1b1c8b726be54796ae6ab")),
+      TestConfig("Nil-Iterator", BuildFromGit("9fadc924d92a732bcf98a1dc020375f95013b660")),
+      TestConfig("inline-tl", BuildFromGit("8bcab1b635d093661fce640b14f223eb754e7f71")),
+      TestConfig("eq-Nil", BuildFromGit("88274b1feaaff8b6f64d5a80227aaf3d2ee2fde8")),
+      TestConfig("List-hashcode", BuildFromGit("475b95b3626f51b063bbb00f1f12c206f478e91d"))
+    ),
     "mike2-disk-final" -> ((0 to 2).toList flatMap { x =>
       List(
         TestConfig(s"0${x}_before-pr", BuildFromGit("09ebc826968be42faa488070826cd12a02b8f1e8")),

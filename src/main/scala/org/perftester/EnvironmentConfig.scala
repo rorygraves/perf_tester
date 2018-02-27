@@ -9,6 +9,7 @@ case class EnvironmentConfig(
                              testDir: Path = Path.home,
                              outputDir: Path = Path.home,
                              iterations: Int = 30,
+                             processes: Int = 1,
                              // the name of the test config to run
                              config: String = "",
                              configString: String = null,
