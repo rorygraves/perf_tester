@@ -4,7 +4,10 @@ import java.io.File
 import java.util
 
 object ProcessTest extends App {
-  val parent = new Parent(new File("."), None)
+  val parent = new Parent(new File("."),
+    None,
+    System.getProperty("java.class.path").split(File.pathSeparator).toList,
+    Nil)
 
   parent.doRun("org.perftester.process.TestA", "foo", "bar")
   parent.doGc()

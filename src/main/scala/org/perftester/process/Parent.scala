@@ -9,7 +9,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
-class Parent(directory: File, environment: Option[Map[String, String]]) {
+class Parent(directory: File,
+             environment: Option[Map[String, String]],
+             classPath: List[String],
+             params: List[String]) {
   private val server = new ServerSocket(0)
 
   private val port = server.getLocalPort
@@ -24,13 +27,17 @@ class Parent(directory: File, environment: Option[Map[String, String]]) {
     }
   }
 
+  val fullClassPath =
+    (getClass.getProtectionDomain.getCodeSource.getLocation.getFile.toString :: classPath)
+      .mkString("", File.pathSeparator, "")
+
   builder.inheritIO()
-  builder.command("java",
-    "-classpath",
-    System.getProperty("java.class.path"),
+  val allParams = List("java", "-classpath", fullClassPath) ++ params ++ List(
     "org.perftester.process.ChildMain",
-    "--parentPort",
     port.toString)
+
+  println(allParams.mkString(" "))
+  builder.command(allParams: _*)
 
   private val process = builder.start()
   server.setSoTimeout(10000) //10 seconds

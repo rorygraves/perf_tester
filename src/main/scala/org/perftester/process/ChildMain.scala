@@ -1,7 +1,9 @@
 package org.perftester.process
 
-import java.io.{ObjectInputStream, ObjectOutputStream, OutputStream, PrintStream}
-import java.net.Socket
+import java.io._
+import java.lang.reflect.InvocationTargetException
+import java.net.{InetAddress, Socket}
+import java.security.Permission
 import java.util
 
 import javax.net.SocketFactory
@@ -9,23 +11,25 @@ import scopt.OptionParser
 
 import scala.util.Try
 
-object ChildMainParser extends OptionParser[ChildMainConfig]("ChildMain") {
-  val defaults = ChildMainConfig(port = -1)
-  head("Child", "1.0")
-
-  opt[String]("parentHost")
-    .action((x, c) => c.copy(host = x))
-    .text(s"The host to connect to")
-
-  opt[Int]("parentPort")
-    .action((x, c) => c.copy(port = x))
-    .text(s"The port to connect to")
-}
-
+//object ChildMainParser extends OptionParser[ChildMainConfig]("ChildMain") {
+//  val defaults = ChildMainConfig(port = -1)
+//  head("Child", "1.0")
+//
+//  opt[String]("parentHost")
+//    .action((x, c) => c.copy(host = x))
+//    .text(s"The host to connect to")
+//
+//  opt[Int]("parentPort")
+//    .action((x, c) => c.copy(port = x))
+//    .text(s"The port to connect to")
+//}
+//
 case class ChildMainConfig(host: String = "localhost", port: Int)
 
 object ChildMain extends App {
-  val cmd = ChildMainParser.parse(args, ChildMainParser.defaults).getOrElse(???)
+  val cmd = ChildMainConfig(port = args(0).toInt)
+
+  System.setSecurityManager(SecMan)
 
   val socket = connect()
   socket.setSendBufferSize(64000)
@@ -51,7 +55,11 @@ object ChildMain extends App {
             val cls = Class.forName(className)
             val method = cls.getMethod("main", classOf[Array[String]])
             assert(method ne null)
-            method.invoke(cls, params.toArray)
+            try {
+              method.invoke(cls, params.toArray)
+            } catch {
+              case ite: InvocationTargetException if ite.getCause.isInstanceOf[DontExit] =>
+            }
             ()
           case Gc =>
             System.gc()
@@ -67,10 +75,12 @@ object ChildMain extends App {
     case t: Throwable =>
       t.printStackTrace()
   }
+  SecMan.exit = true
   oos.flush()
   //ensure the close doesnt overtake
   Thread.sleep(1000)
   socket.close()
+  System.exit(0)
 
   def read(): Inputs = {
     ois.readObject().asInstanceOf[Inputs]
@@ -82,6 +92,71 @@ object ChildMain extends App {
 
 }
 
+class DontExit extends AssertionError
+
+object SecMan extends SecurityManager {
+  var exit = false
+
+  override def checkExit(status: Int): Unit = {
+    if (!exit) throw new DontExit
+  }
+
+  override def checkExec(cmd: String): Unit = ()
+
+  override def checkAwtEventQueueAccess(): Unit = ()
+
+  override def checkPrintJobAccess(): Unit = ()
+
+  override def checkMulticast(maddr: InetAddress): Unit = ()
+
+  override def checkMulticast(maddr: InetAddress, ttl: Byte): Unit = ()
+
+  override def checkPermission(perm: Permission): Unit = ()
+
+  override def checkPermission(perm: Permission, context: scala.Any): Unit = ()
+
+  override def checkAccept(host: String, port: Int): Unit = ()
+
+  override def checkSetFactory(): Unit = ()
+
+  override def checkLink(lib: String): Unit = ()
+
+  override def checkWrite(fd: FileDescriptor): Unit = ()
+
+  override def checkWrite(file: String): Unit = ()
+
+  override def checkPropertyAccess(key: String): Unit = ()
+
+  override def checkSecurityAccess(target: String): Unit = ()
+
+  override def checkListen(port: Int): Unit = ()
+
+  override def checkAccess(t: Thread): Unit = ()
+
+  override def checkAccess(g: ThreadGroup): Unit = ()
+
+  override def checkDelete(file: String): Unit = ()
+
+  override def checkCreateClassLoader(): Unit = ()
+
+  override def checkPackageDefinition(pkg: String): Unit = ()
+
+  override def checkConnect(host: String, port: Int): Unit = ()
+
+  override def checkConnect(host: String, port: Int, context: scala.Any): Unit = ()
+
+  override def checkPackageAccess(pkg: String): Unit = ()
+
+  override def checkPropertiesAccess(): Unit = ()
+
+  override def checkSystemClipboardAccess(): Unit = ()
+
+  override def checkRead(fd: FileDescriptor): Unit = ()
+
+  override def checkRead(file: String): Unit = ()
+
+  override def checkRead(file: String, context: scala.Any): Unit = ()
+}
 class ConsoleStream(err: Boolean, original: PrintStream, stream: ObjectOutputStream)
   extends OutputStream {
 
