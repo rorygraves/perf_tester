@@ -6,7 +6,7 @@ object Compiler extends App {
   val lib = "C:\\Users\\dev\\scalacBuildCache\\d1b745c2e97cc89e5d26b8f5a5696a2611c01af7\\lib\\"
   val classPath =
     s"${lib}jline.jar;${lib}scala-compiler-doc.jar;${lib}scala-compiler.jar;${lib}scala-library.jar;${lib}scala-reflect.jar;${lib}scala-repl-jline-embedded.jar;${lib}scala-repl-jline.jar;${lib}scala-swing_2.12-2.0.0.jar;${lib}scala-xml_2.12-1.0.6.jar;${lib}scalap.jar"
-  val params = List("-Xmx256M",
+  val params = List("-Xmx10G",
                     "-Xms32M",
                     """-Dscala.home="C:\PROGRA~2\scala\bin\.."""",
                     """-Denv.emacs="" """,
@@ -171,7 +171,7 @@ object Compiler extends App {
       "-sourcepath",
       "S:\\scala\\akka\\akka-actor\\src\\main\\java;S:\\scala\\akka\\akka-actor\\src\\main\\scala",
       "-Yprofile-destination",
-      s"S:\\scala\\test\\results\\mike\\COMPILER\\${i}_run_new.csv"
+      s"S:\\scala\\test\\results\\mike\\COMPILER\\${i}_run_new2.csv"
     ) ++ files
 
   for (vm <- 1 to 20) {

@@ -26,7 +26,7 @@ import scala.util.Try
 //
 case class ChildMainConfig(host: String = "localhost", port: Int)
 
-object ChildMain extends App {
+object ChildMain extends App with Runnable {
   val cmd = ChildMainConfig(port = args(0).toInt)
 
   System.setSecurityManager(SecMan)
@@ -45,43 +45,49 @@ object ChildMain extends App {
   System.setErr(new PrintStream(new ConsoleStream(true, origErr, oos)))
   System.setOut(new PrintStream(new ConsoleStream(false, origOut, oos)))
 
-  try {
-    var done = false
-    while (!done) {
-      val cmd = read()
-      val res = Try {
-        cmd match {
-          case Run(className, params) =>
-            val cls    = Class.forName(className)
-            val method = cls.getMethod("main", classOf[Array[String]])
-            assert(method ne null)
-            try {
-              method.invoke(cls, params.toArray)
-            } catch {
-              case ite: InvocationTargetException if ite.getCause.isInstanceOf[DontExit] =>
-            }
-            ()
-          case Gc =>
-            System.gc()
-            System.runFinalization()
-          case Exit =>
-            done = true
+  val t = new Thread(this)
+  t.setPriority(Thread.MAX_PRIORITY)
+  t.setDaemon(false)
+  t.start()
+
+  def run() {
+    try {
+      var done = false
+      while (!done) {
+        val cmd = read()
+        val res = Try {
+          cmd match {
+            case Run(className, params) =>
+              val cls    = Class.forName(className)
+              val method = cls.getMethod("main", classOf[Array[String]])
+              assert(method ne null)
+              try {
+                method.invoke(cls, params.toArray)
+              } catch {
+                case ite: InvocationTargetException if ite.getCause.isInstanceOf[DontExit] =>
+              }
+              ()
+            case Gc =>
+              System.gc()
+              System.runFinalization()
+            case Exit =>
+              done = true
+          }
         }
+        Complete(cmd, res).writeTo(oos)
+
       }
-      Complete(cmd, res).writeTo(oos)
-
+    } catch {
+      case t: Throwable =>
+        t.printStackTrace()
     }
-  } catch {
-    case t: Throwable =>
-      t.printStackTrace()
+    SecMan.exit = true
+    oos.flush()
+    //ensure the close doesnt overtake
+    Thread.sleep(1000)
+    socket.close()
+    System.exit(0)
   }
-  SecMan.exit = true
-  oos.flush()
-  //ensure the close doesnt overtake
-  Thread.sleep(1000)
-  socket.close()
-  System.exit(0)
-
   def read(): Inputs = {
     ois.readObject().asInstanceOf[Inputs]
   }
