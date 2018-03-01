@@ -34,11 +34,11 @@ object ChildMain extends App {
   val socket = connect()
   socket.setSendBufferSize(64000)
   val socketOut = socket.getOutputStream
-  val oos = new ObjectOutputStream(socketOut)
-  val socketIn = socket.getInputStream
-  val ois = new ObjectInputStream(socketIn)
+  val oos       = new ObjectOutputStream(socketOut)
+  val socketIn  = socket.getInputStream
+  val ois       = new ObjectInputStream(socketIn)
 
-  val origIn = System.in
+  val origIn  = System.in
   val origOut = System.out
   val origErr = System.err
 
@@ -52,7 +52,7 @@ object ChildMain extends App {
       val res = Try {
         cmd match {
           case Run(className, params) =>
-            val cls = Class.forName(className)
+            val cls    = Class.forName(className)
             val method = cls.getMethod("main", classOf[Array[String]])
             assert(method ne null)
             try {
@@ -158,7 +158,7 @@ object SecMan extends SecurityManager {
   override def checkRead(file: String, context: scala.Any): Unit = ()
 }
 class ConsoleStream(err: Boolean, original: PrintStream, stream: ObjectOutputStream)
-  extends OutputStream {
+    extends OutputStream {
 
   val copy = true
 

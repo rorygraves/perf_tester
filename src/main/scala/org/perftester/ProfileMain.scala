@@ -160,7 +160,7 @@ object ProfileMain {
         (sourceDir, reuse, targetBuild)
     }
 
-    val profileOutputFile = outputFolder / s"run_${vm}_${testConfig.id}.csv"
+    val profileOutputFile = outputFolder / s"${vm}_${testConfig.id}.csv"
 
     val exists = Files.exists(profileOutputFile.toNIO)
 

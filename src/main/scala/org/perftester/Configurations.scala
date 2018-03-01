@@ -55,6 +55,9 @@ object Configurations {
       TestConfig("eq-Nil", BuildFromGit("88274b1feaaff8b6f64d5a80227aaf3d2ee2fde8")),
       TestConfig("List-hashcode", BuildFromGit("475b95b3626f51b063bbb00f1f12c206f478e91d"))
     ),
+    "COMPILER" -> List(
+      TestConfig("run_new", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7"))
+    ),
     "mike2-disk-final" -> ((0 to 2).toList flatMap { x =>
       List(
         TestConfig(s"0${x}_before-pr", BuildFromGit("09ebc826968be42faa488070826cd12a02b8f1e8")),

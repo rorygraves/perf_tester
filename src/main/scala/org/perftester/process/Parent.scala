@@ -45,7 +45,7 @@ class Parent(directory: File,
   server.close()
   private val out = socket.getOutputStream
   private val oos = new ObjectOutputStream(out)
-  private val in = socket.getInputStream
+  private val in  = socket.getInputStream
   private val ois = new ObjectInputStream(in)
 
   private val t = new Thread(new Runnable {
@@ -64,7 +64,7 @@ class Parent(directory: File,
   })
   t.start()
 
-  var maxDuration = 10 minutes
+  var maxDuration    = 10 minutes
   private val closed = new AtomicBoolean()
 
   private var response: Promise[Complete] = _
@@ -77,7 +77,7 @@ class Parent(directory: File,
       case Complete(c, r) if c == cmd =>
         r match {
           case Success(()) =>
-          case Failure(t) => throw new InvocationTargetException(t)
+          case Failure(t)  => throw new InvocationTargetException(t)
         }
     }
 

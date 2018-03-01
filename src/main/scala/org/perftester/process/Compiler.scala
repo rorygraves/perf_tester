@@ -3,13 +3,14 @@ package org.perftester.process
 import java.io.File
 
 object Compiler extends App {
+  val lib = "C:\\Users\\dev\\scalacBuildCache\\d1b745c2e97cc89e5d26b8f5a5696a2611c01af7\\lib\\"
   val classPath =
-    "C:/PROGRA~2/scala/bin/../lib/jline-2.14.5.jar;C:/PROGRA~2/scala/bin/../lib/scala-compiler.jar;C:/PROGRA~2/scala/bin/../lib/scala-library.jar;C:/PROGRA~2/scala/bin/../lib/scala-parser-combinators_2.12-1.0.6.jar;C:/PROGRA~2/scala/bin/../lib/scala-reflect.jar;C:/PROGRA~2/scala/bin/../lib/scala-swing_2.12-2.0.0.jar;C:/PROGRA~2/scala/bin/../lib/scala-xml_2.12-1.0.6.jar;C:/PROGRA~2/scala/bin/../lib/scalap-2.12.4.jar"
+    s"${lib}jline.jar;${lib}scala-compiler-doc.jar;${lib}scala-compiler.jar;${lib}scala-library.jar;${lib}scala-reflect.jar;${lib}scala-repl-jline-embedded.jar;${lib}scala-repl-jline.jar;${lib}scala-swing_2.12-2.0.0.jar;${lib}scala-xml_2.12-1.0.6.jar;${lib}scalap.jar"
   val params = List("-Xmx256M",
-    "-Xms32M",
-    """-Dscala.home="C:\PROGRA~2\scala\bin\.."""",
-    """-Denv.emacs="" """,
-    "-Dscala.usejavacp=true")
+                    "-Xms32M",
+                    """-Dscala.home="C:\PROGRA~2\scala\bin\.."""",
+                    """-Denv.emacs="" """,
+                    "-Dscala.usejavacp=true")
   val files = List(
     "S:/scala/akka/akka-actor/src/main/scala/akka/AkkaException.scala",
     "S:/scala/akka/akka-actor/src/main/scala/akka/Done.scala",
@@ -170,10 +171,10 @@ object Compiler extends App {
       "-sourcepath",
       "S:\\scala\\akka\\akka-actor\\src\\main\\java;S:\\scala\\akka\\akka-actor\\src\\main\\scala",
       "-Yprofile-destination",
-      s"S:\\scala\\test\\results\\mike\\COMPILER\\${i}_run.csv"
+      s"S:\\scala\\test\\results\\mike\\COMPILER\\${i}_run_new.csv"
     ) ++ files
 
-  for (vm <- 1 to 10) {
+  for (vm <- 1 to 20) {
     val parent = new Parent(new File("."), None, classPath.split(";").toList, params)
     for (cycle <- 1 to 100) {
       parent.doRun("scala.tools.nsc.Main", allParams(vm): _*)
