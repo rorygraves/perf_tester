@@ -35,7 +35,7 @@ case class CompilerSetup(rootPath: Path, providedScalacOptions: List[String]) {
   val global: Global = new Global(settings, reporter)
 
   def configure(settings: Settings): Unit = {
-    settings.outputDirs.setSingleOutput(currentOutput.toString)
+    settings.outputDirs.setSingleOutput(currentOutput.toAbsolutePath.toString)
     settings.classpath.append(cpJars.mkString(File.pathSeparator))
     settings.processArguments(scalacOptions, processAll = true)
   }
