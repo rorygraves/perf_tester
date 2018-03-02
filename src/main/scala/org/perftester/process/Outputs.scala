@@ -12,4 +12,4 @@ sealed trait Outputs {
 
 case class Console(err: Boolean, text: Array[Byte]) extends Outputs
 
-case class Complete(input: Inputs, result: Try[Unit]) extends Outputs
+case class Complete(input: Inputs, duration: Long, result: Either[Unit, String]) extends Outputs

@@ -21,6 +21,11 @@ libraryDependencies += "ch.qos.logback"     % "logback-classic" % "1.2.3"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.4"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 
+libraryDependencies += "junit" % "junit" % "4.11" % "test"
+//scala compiler only for direct compilation
+//should be a seperate project - just needed for the launcher
+libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.4"
+
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 addSbtPlugin("com.artima.supersafe" % "sbtplugin" % "1.1.3")
 

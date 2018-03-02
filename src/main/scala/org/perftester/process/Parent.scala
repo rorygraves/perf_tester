@@ -74,10 +74,12 @@ class Parent(directory: File,
     cmd.writeTo(oos)
     println(s"running $cmd")
     Await.result(response.future, duration) match {
-      case Complete(c, r) if c == cmd =>
+      case Complete(c, time, r) if c == cmd =>
         r match {
-          case Success(()) =>
-          case Failure(t)  => throw new InvocationTargetException(t)
+          case Left(()) => time
+          case Right(t) =>
+            System.err.print(t)
+            throw new Exception()
         }
     }
 
@@ -85,6 +87,29 @@ class Parent(directory: File,
 
   def doRun(className: String, args: String*) = {
     exec(Run(className, args), maxDuration)
+  }
+
+  def createGlobal(id: String,
+                   outputDirectory: String,
+                   classPath: Seq[String],
+                   otherParams: List[String],
+                   files: List[String]) = {
+    exec(ScalacGlobalConfig(id,
+                            Some(outputDirectory),
+                            Some(classPath),
+                            Some(otherParams),
+                            Some(files)),
+         maxDuration)
+  }
+  def updateGlobal(id: String,
+                   outputDirectory: Option[String],
+                   classPath: Option[Seq[String]],
+                   otherParams: Option[List[String]],
+                   files: Option[List[String]]) = {
+    exec(ScalacGlobalConfig(id, outputDirectory, classPath, otherParams, files), maxDuration)
+  }
+  def runGlobal(id: String) = {
+    exec(ScalacRun(id), maxDuration)
   }
 
   def doGc() = {

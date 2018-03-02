@@ -7,29 +7,20 @@ import java.security.Permission
 import java.util
 
 import javax.net.SocketFactory
-import scopt.OptionParser
+import org.perftester.process.compiler.Reporters
 
-import scala.util.Try
+import scala.collection.mutable
+import scala.org.perftester.process.compiler.NioFiles
+import scala.reflect.internal.util.BatchSourceFile
+import scala.tools.nsc.{Global, Settings}
+import scala.util.{Failure, Success, Try}
 
-//object ChildMainParser extends OptionParser[ChildMainConfig]("ChildMain") {
-//  val defaults = ChildMainConfig(port = -1)
-//  head("Child", "1.0")
-//
-//  opt[String]("parentHost")
-//    .action((x, c) => c.copy(host = x))
-//    .text(s"The host to connect to")
-//
-//  opt[Int]("parentPort")
-//    .action((x, c) => c.copy(port = x))
-//    .text(s"The port to connect to")
-//}
-//
 case class ChildMainConfig(host: String = "localhost", port: Int)
 
 object ChildMain extends App with Runnable {
   val cmd = ChildMainConfig(port = args(0).toInt)
 
-  System.setSecurityManager(SecMan)
+//  System.setSecurityManager(SecMan)
 
   val socket = connect()
   socket.setSendBufferSize(64000)
@@ -42,19 +33,22 @@ object ChildMain extends App with Runnable {
   val origOut = System.out
   val origErr = System.err
 
-  System.setErr(new PrintStream(new ConsoleStream(true, origErr, oos)))
-  System.setOut(new PrintStream(new ConsoleStream(false, origOut, oos)))
+//  System.setErr(new PrintStream(new ConsoleStream(true, origErr, oos)))
+//  System.setOut(new PrintStream(new ConsoleStream(false, origOut, oos)))
 
   val t = new Thread(this)
   t.setPriority(Thread.MAX_PRIORITY)
   t.setDaemon(false)
   t.start()
 
+  val configs = new mutable.HashMap[String, GlobalHolder]()
+
   def run() {
     try {
       var done = false
       while (!done) {
-        val cmd = read()
+        val cmd   = read().asInstanceOf[Inputs]
+        val start = System.nanoTime()
         val res = Try {
           cmd match {
             case Run(className, params) =>
@@ -67,6 +61,27 @@ object ChildMain extends App with Runnable {
                 case ite: InvocationTargetException if ite.getCause.isInstanceOf[DontExit] =>
               }
               ()
+            case config: ScalacGlobalConfig =>
+              val holder = configs.getOrElseUpdate(
+                config.id,
+                new GlobalHolder(new Global(newSettings(), Reporters.noInfo)))
+              val settings = holder.global.settings
+
+              config.outputDirectory foreach settings.outputDirs.setSingleOutput
+              config.classPath foreach { cp =>
+                settings.classpath.append(cp.mkString(File.pathSeparator))
+              }
+              config.otherParams foreach { params =>
+                settings.processArguments(params, processAll = true)
+              }
+
+              config.files foreach holder.replaceFiles
+
+            case ScalacRun(id) =>
+              val holder = configs(id)
+              val run    = new holder.global.Run()
+//              run.compileSources(holder.sourceFiles)
+              run.compile(holder.rawFiles)
             case Gc =>
               System.gc()
               System.runFinalization()
@@ -74,7 +89,22 @@ object ChildMain extends App with Runnable {
               done = true
           }
         }
-        Complete(cmd, res).writeTo(oos)
+        val duration = System.nanoTime() - start
+        val serializable = res match {
+          case Success(a) => Left(a)
+          case Failure(f) =>
+            val sw = new StringWriter()
+            val pw = new PrintWriter(sw)
+            f.printStackTrace(pw)
+
+            f.printStackTrace
+
+            Right(sw.toString)
+        }
+//        println(s"cmd $cmd")
+//        println(s"duration $duration")
+//        println(s"res $res")
+        Complete(cmd, duration, serializable).writeTo(oos)
 
       }
     } catch {
@@ -83,7 +113,6 @@ object ChildMain extends App with Runnable {
     }
     SecMan.exit = true
     oos.flush()
-    //ensure the close doesnt overtake
     Thread.sleep(1000)
     socket.close()
     System.exit(0)
@@ -91,12 +120,25 @@ object ChildMain extends App with Runnable {
   def read(): Inputs = {
     ois.readObject().asInstanceOf[Inputs]
   }
-
   def connect(): Socket = {
     SocketFactory.getDefault.createSocket(cmd.host, cmd.port)
   }
 
+  class GlobalHolder(val global: Global) {
+    private var files: List[BatchSourceFile] = Nil
+    var rawFiles: List[String]               = Nil
+
+    def replaceFiles(newFiles: List[String]): Unit = {
+      files = newFiles map { n =>
+        new BatchSourceFile(NioFiles.file(n))
+      }
+      rawFiles = newFiles
+    }
+    def sourceFiles = files
+  }
+  def newSettings(): Settings = new Settings(msg => throw new RuntimeException(s"[ERROR] $msg"))
 }
+//ensure the close doesnt overtake
 
 class DontExit extends AssertionError
 
