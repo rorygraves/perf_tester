@@ -1,0 +1,1 @@
+--user rory --scalaCDir /home/rory/perf_workspace/scalac_perf --corpus /home/rory/perf_workspace/perf_tester/corpus/akka --resultsDir /home/rory/perf_workspace/results/ --config mike-Nil --iterations 100 --processes 10
