@@ -28,7 +28,10 @@ object ProfileMain {
 
   val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
-  def printAggResults(testConfig: TestConfig, results: Seq[PhaseResults], limit: Double): Unit = {
+  def printAggResults(cycleId: Int,
+                      testConfig: TestConfig,
+                      results: Seq[PhaseResults],
+                      limit: Double): Unit = {
 
     val size = (results.size * limit).toInt
     case class Distribution(min: Double, max: Double, mean: Double) {
@@ -65,8 +68,9 @@ object ProfileMain {
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
     val allIdleMsStr         = allIdleAvg.formatted(6, 2)
     println(
-      "%25s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
+      "%25s\t%4s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
         .format(testConfig.id,
+                cycleId,
                 size,
                 wallMsStr,
                 allWallMsStr,
@@ -160,7 +164,7 @@ object ProfileMain {
         (sourceDir, reuse, targetBuild)
     }
 
-    val profileOutputFile = outputFolder / s"${vm}_${testConfig.id}.csv"
+    val profileOutputFile = outputFolder / s"run_${vm}_${testConfig.id}.csv"
 
     val exists = Files.exists(profileOutputFile.toNIO)
 
