@@ -60,7 +60,10 @@ object Configurations {
       TestConfig("List-hashcode", BuildFromGit("475b95b3626f51b063bbb00f1f12c206f478e91d"))
     ),
     "COMPILER" -> List(
-      TestConfig("run_new3", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7"))
+      TestConfig("run_sbt", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
+      TestConfig("run_direct",
+                 BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7"),
+                 useSbt = false)
     ),
     "mike2-disk-final" -> ((0 to 2).toList flatMap { x =>
       List(
