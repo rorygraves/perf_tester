@@ -9,17 +9,19 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
-class Parent(directory: File,
-             environment: Option[Map[String, String]],
-             classPath: List[String],
-             params: List[String]) {
+case class ProcessConfiguration(directory: File,
+                                environment: Option[Map[String, String]],
+                                classPath: List[String],
+                                params: List[String])
+
+class Parent(config: ProcessConfiguration) {
   private val server = new ServerSocket(0)
 
   private val port = server.getLocalPort
 
-  private val builder = new ProcessBuilder().directory(directory)
+  private val builder = new ProcessBuilder().directory(config.directory)
 
-  environment foreach { env =>
+  config.environment foreach { env =>
     val e = builder.environment()
     e.clear()
     env foreach {
@@ -28,11 +30,11 @@ class Parent(directory: File,
   }
 
   val fullClassPath =
-    (getClass.getProtectionDomain.getCodeSource.getLocation.getFile.toString :: classPath)
+    (getClass.getProtectionDomain.getCodeSource.getLocation.getFile.toString :: config.classPath)
       .mkString("", File.pathSeparator, "")
 
   builder.inheritIO()
-  val allParams = List("java", "-classpath", fullClassPath) ++ params ++ List(
+  val allParams = List("java", "-classpath", fullClassPath) ++ config.params ++ List(
     "org.perftester.process.ChildMain",
     port.toString)
 
@@ -100,6 +102,9 @@ class Parent(directory: File,
                             Some(otherParams),
                             Some(files)),
          maxDuration)
+  }
+  def destroyGlobal(id: String) = {
+    exec(ScalacRetire(id), maxDuration)
   }
   def updateGlobal(id: String,
                    outputDirectory: Option[String],

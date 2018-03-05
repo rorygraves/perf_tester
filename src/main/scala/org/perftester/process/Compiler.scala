@@ -41,7 +41,8 @@ object Compiler extends App {
 //    ) ++ files
 //
   for (vm <- 1 to 20) {
-    val parent = new Parent(new File("."), None, classPath.split(";").toList, params)
+    val parent = new Parent(
+      new ProcessConfiguration(new File("."), None, classPath.split(";").toList, params))
     parent.createGlobal("", "z:", compileClassPath, otherParams(vm), files)
     for (cycle <- 1 to 100) {
       val response = parent.runGlobal("")

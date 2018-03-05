@@ -1,9 +1,11 @@
 package org.perftester
 
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 
-import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, mkdir, read}
+import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
+import org.perftester.process.Compiler._
+import org.perftester.process.{IO, Parent, ProcessConfiguration}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunDetails, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
@@ -129,12 +131,12 @@ object ProfileMain {
       repeat: Int
   ): RunPlan = {
     val (sourceDir: Path, reuseScalac: Boolean, scalacPackDir: Path) = testConfig match {
-      case TestConfig(_, BuildFromGit(sha, customDir), _, _) =>
+      case TestConfig(_, BuildFromGit(sha, customDir), _, _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
         val packDir   = envConfig.scalacBuildCache / sha
         val reused    = Files.exists(packDir / flag toNIO)
         (targetDir, reused, packDir)
-      case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _) =>
+      case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _, _) =>
         val sourceDir   = bfd.path
         val targetBuild = buildDir(sourceDir)
         val reuse = {
@@ -253,38 +255,93 @@ object ProfileMain {
 
   def executeTest(runPlan: RunPlan): Unit = {
     val mkPackPath = runPlan.scalaPackDir
-
-    log.info("Logging stats to " + runPlan.profileOutputFile)
-    if (Files.exists(runPlan.profileOutputFile.toNIO))
-      Files.delete(runPlan.profileOutputFile.toNIO)
-    val extraArgsStr =
-      if (runPlan.testConfig.extraArgs.nonEmpty)
-        runPlan.testConfig.extraArgs.mkString("\"", "\",\"", "\",")
-      else ""
-
     val debugArgs =
       if (runPlan.envConfig.runWithDebug)
         "-agentlib:jdwp=transport=dt_shmem,server=y,suspend=y" :: Nil
       else Nil
 
-    val programArgs = List(
-      s"++2.12.3=$mkPackPath",
-      s"""set scalacOptions in ThisBuild ++= List($extraArgsStr"-Yprofile-destination","${runPlan.profileOutputFile}")"""
-    )
+    val profileParams = List("-Yprofile-destination", runPlan.profileOutputFile.toString())
+
+    log.info("Logging stats to " + runPlan.profileOutputFile)
+    if (Files.exists(runPlan.profileOutputFile.toNIO))
+      Files.delete(runPlan.profileOutputFile.toNIO)
 
     val jvmArgs = debugArgs ::: runPlan.testConfig.extraJVMArgs
+    if (runPlan.testConfig.useSbt) {
+      val extraArgsStr =
+        if (runPlan.testConfig.extraArgs.nonEmpty)
+          runPlan.testConfig.extraArgs.mkString("\"", "\",\"", "\", ")
+        else ""
 
-    val dotfile = runPlan.envConfig.testDir / ".perf_tester"
-    val sbtCommands =
-      if (dotfile.toIO.exists()) read.lines(dotfile).toList.filterNot(_.trim.isEmpty)
-      else "clean" :: "compile" :: Nil // slightly bogus default
+      val programArgs = List(
+        s"++2.12.3=$mkPackPath",
+        s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
+          .mkString("\"", "\",\"", "\"")})"""
+      )
 
-    SBTBotTestRunner.run(runPlan.envConfig.testDir,
-                         programArgs,
-                         jvmArgs,
-                         runPlan.repeats,
-                         sbtCommands,
-                         runPlan.envConfig.runWithDebug)
+      val dotfile = runPlan.envConfig.testDir / ".perf_tester"
+      val sbtCommands =
+        if (dotfile.toIO.exists()) read.lines(dotfile).toList.filterNot(_.trim.isEmpty)
+        else "clean" :: "compile" :: Nil // slightly bogus default
+
+      SBTBotTestRunner.run(runPlan.envConfig.testDir,
+                           programArgs,
+                           jvmArgs,
+                           runPlan.repeats,
+                           sbtCommands,
+                           runPlan.envConfig.runWithDebug)
+    } else {
+      val mkPackLibPath = (mkPackPath / "lib").toString()
+      val classPath = List(
+        "jline.jar",
+        "scala-compiler-doc.jar",
+        "scala-compiler.jar",
+        "scala-library.jar",
+        "scala-reflect.jar",
+        "scala-repl-jline-embedded.jar",
+        "scala-repl-jline.jar",
+        "scala-swing_2.12-2.0.0.jar",
+        "scala-xml_2.12-1.0.6.jar",
+        "scalap.jar"
+      ).map(mkPackPath + File.separator + "lib" + File.separator + _)
+
+      //      s"${lib}jline.jar;${lib}scala-compiler-doc.jar;${lib}scala-compiler.jar;${lib}scala-library.jar;${lib}scala-reflect.jar;${lib}scala-repl-jline-embedded.jar;${lib}scala-repl-jline.jar;${lib}scala-swing_2.12-2.0.0.jar;${lib}scala-xml_2.12-1.0.6.jar;${lib}scalap.jar"
+      val params = List("-Xmx10G",
+                        "-Xms32M",
+                        s"""-Dscala.home="$mkPackPath${File.separator}.."""",
+                        """-Denv.emacs="" """,
+                        "-Dscala.usejavacp=true") ::: debugArgs ::: runPlan.testConfig.extraJVMArgs
+
+      //TODO need to read this
+      val files = IO.listSourcesIn(Paths.get("S:/scala/akka/akka-actor/src/main/scala")) map (_.toString)
+
+      //TODO need to read this
+      val compileClassPath = List(
+        "C:\\Users\\dev\\.ivy2\\cache\\org.scala-lang.modules\\scala-java8-compat_2.12\\bundles\\scala-java8-compat_2.12-0.8.0.jar",
+        "C:\\Users\\dev\\.ivy2\\cache\\com.typesafe\\config\\bundles\\config-1.3.1.jar",
+        "C:\\Users\\dev\\.m2\\repository\\com\\typesafe\\akka\\akka-actor_2.12\\2.5.1\\akka-actor_2.12-2.5.1.jar"
+      )
+
+      //TODO need to read this
+      val otherParams =
+        List(
+          "-sourcepath",
+          s"${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}java${File.pathSeparator}${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}scala"
+        ) ++ profileParams
+
+      val id     = "x"
+      val parent = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
+      parent.createGlobal(id, "z:", compileClassPath, otherParams, files)
+      for (cycle <- 1 to runPlan.envConfig.iterations) {
+        val result = parent.runGlobal(id)
+        println(s" run ${runPlan.vm} # $cycle took ${result / 1000 / 1000.0} ms")
+
+        parent.doGc()
+      }
+      parent.destroyGlobal(id)
+      parent.doExit()
+    }
+
   }
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
