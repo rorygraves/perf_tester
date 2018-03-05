@@ -11,7 +11,7 @@ object TextRenderer {
   def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = {
     def heading(title: String) {
       println(
-        f"-----\n$title\n${"Run Name"}%25s\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
+        f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
     }
     def allPhases(raw: Seq[PhaseResults]): Seq[PhaseResults] = {
       val res = raw.groupBy(_.iterationId) map {
@@ -50,26 +50,27 @@ object TextRenderer {
     heading("ALL")
     results.foreach {
       case RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) =>
-        printAggResults(testConfig, allPhases(rawData), 1)
+        printAggResults(cycleId, testConfig, allPhases(rawData), 1)
     }
     val phases: mutable.LinkedHashSet[String] =
       results.toList.flatMap(_.runResult.phases)(scala.collection.breakOut)
 
     if (envConfig.iterations > 10) {
-      (10 until (envConfig.iterations, 10)) foreach { i =>
+      for (i      <- List(0); //<- 10 until (envConfig.iterations, 10);
+           bestPC <- 100 until (0, -5)) {
         println(
           "\n---------------------------------------------------------------------------------------------------")
         println(
           "---------------------------------------------------------------------------------------------------")
-        heading(s"after $i 90%")
+        heading(s"after $i best $bestPC%")
         results.foreach {
           case RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) =>
             val skipped = rawData.dropWhile(_.iterationId <= i)
-            printAggResults(testConfig, allPhases(skipped), 0.9)
+            printAggResults(cycleId, testConfig, allPhases(skipped), bestPC / 100.0)
         }
 
         for (phase <- phases) {
-          heading(s"after $i 90%, phase $phase")
+          heading(s"after $i best $bestPC%, phase $phase")
           for {
             RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) <- results
           } {
@@ -77,11 +78,11 @@ object TextRenderer {
               case row => row.iterationId > i && row.phaseName == phase
             }
 
-            printAggResults(testConfig, skipped, 0.9)
+            printAggResults(cycleId, testConfig, skipped, bestPC / 100.0)
           }
         }
         for (phase <- phases) {
-          heading(s"after $i 90%, phase $phase no GC")
+          heading(s"after $i best $bestPC%, phase $phase no GC")
           for {
             RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) <- results
           } {
@@ -89,7 +90,7 @@ object TextRenderer {
               case row => row.iterationId > i && row.phaseName == phase && row.gcTimeMS == 0
             }
 
-            printAggResults(testConfig, skipped, 0.9)
+            printAggResults(cycleId, testConfig, skipped, bestPC / 100.0)
           }
         }
       }
