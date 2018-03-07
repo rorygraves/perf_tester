@@ -57,7 +57,7 @@ object TextRenderer {
 
     if (envConfig.iterations > 10) {
       for (i      <- List(0); //<- 10 until (envConfig.iterations, 10);
-           bestPC <- 100 until (0, -5)) {
+           bestPC <- (100 until (0, -5)).toList ::: List(1)) {
         println(
           "\n---------------------------------------------------------------------------------------------------")
         println(
