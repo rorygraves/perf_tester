@@ -21,7 +21,7 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  lazy val defaultSettings = 
+  lazy val defaultSettings =
     Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
