@@ -52,7 +52,7 @@ object ProfileMain {
       else {
         val raw  = (results map fn sorted).take(size)
         val mean = raw.sum / size
-        Distribution(raw.head, raw.last, mean)
+        if (raw.isEmpty) Distribution(-1, -1, -1) else Distribution(raw.head, raw.last, mean)
       }
     }
 
