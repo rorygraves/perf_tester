@@ -12,6 +12,8 @@ import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.immutable.SortedSet
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object ProfileMain {
 
@@ -242,7 +244,7 @@ object ProfileMain {
 
     log.info(s"Building compiler in $sourceDir")
 
-    runSbt(List("setupPublishCore", "dist/mkPack"), sourceDir, Nil)
+    runSbt(List("setupPublishCore", "clean", "dist/mkPack"), sourceDir, Nil)
     if (scalaPackDir != buildDir(sourceDir)) {
       val nioScalaPackDir = scalaPackDir.toNIO
       Utils.deleteDir(nioScalaPackDir)
@@ -278,7 +280,7 @@ object ProfileMain {
         else ""
 
       val programArgs = List(
-        s"++2.12.3=$mkPackPath",
+        s"++2.12.5=$mkPackPath",
         s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
           .mkString("\"", "\",\"", "\"")})"""
       )
@@ -310,11 +312,15 @@ object ProfileMain {
       ).map(mkPackPath + File.separator + "lib" + File.separator + _)
 
       //      s"${lib}jline.jar;${lib}scala-compiler-doc.jar;${lib}scala-compiler.jar;${lib}scala-library.jar;${lib}scala-reflect.jar;${lib}scala-repl-jline-embedded.jar;${lib}scala-repl-jline.jar;${lib}scala-swing_2.12-2.0.0.jar;${lib}scala-xml_2.12-1.0.6.jar;${lib}scalap.jar"
-      val params = List("-Xmx10G",
-                        "-Xms32M",
-                        s"""-Dscala.home="$mkPackPath${File.separator}.."""",
-                        """-Denv.emacs="" """,
-                        "-Dscala.usejavacp=true") ::: debugArgs ::: runPlan.testConfig.extraJVMArgs
+      val params = List(
+        "-XX:MaxInlineLevel=32",
+        //"-XX:MaxInlineSize=35",
+        "-Xmx10G",
+        "-Xms32M",
+        s"""-Dscala.home="$mkPackPath${File.separator}.."""",
+        """-Denv.emacs="" """,
+        "-Dscala.usejavacp=true"
+      ) ::: debugArgs ::: runPlan.testConfig.extraJVMArgs
 
       //TODO need to read this
       val files = IO.listSourcesIn(Paths.get("S:/scala/akka/akka-actor/src/main/scala")) map (_.toString)
@@ -333,19 +339,31 @@ object ProfileMain {
           s"${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}java${File.pathSeparator}${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}scala"
         ) ++ profileParams
 
-      val id     = "x"
-      val parent = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
-      parent.createGlobal(id, "z:", compileClassPath, otherParams, files)
+      val id         = "x"
+      val parent     = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
+      val outputPath = "z:\\"
+      parent.createGlobal(id, outputPath, compileClassPath, otherParams, files)
       for (cycle <- 1 to runPlan.envConfig.iterations) {
         val result = parent.runGlobal(id)
         println(s" run ${runPlan.vm} # $cycle took ${result / 1000 / 1000.0} ms")
 
+        val delete = startClean(Path(outputPath))
+
         parent.doGc()
+
+        Await.result(delete, Duration.Inf)
       }
       parent.destroyGlobal(id)
       parent.doExit()
     }
+  }
+  def startClean(file: Path) = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    import scala.concurrent.Future
 
+    Future {
+      IO.deleteDir(file.toNIO)
+    }
   }
 
   def sbtCommandLine(extraJVMArgs: List[String]): List[String] = {
