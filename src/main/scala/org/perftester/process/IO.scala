@@ -7,7 +7,7 @@ import java.io.IOException
 /* This is fast hacky IO but it prove to be sufficient */
 object IO {
 
-  def deleteDir(file: Path): Unit = {
+  def deleteDir(root: Path, deleteRoot: Boolean): Unit = {
 
     object deleter extends SimpleFileVisitor[Path] {
       override def visitFile(path: Path, attr: BasicFileAttributes): FileVisitResult = {
@@ -17,13 +17,14 @@ object IO {
 
       override def postVisitDirectory(path: Path, e: IOException): FileVisitResult = {
         if (e eq null) {
-          Files.delete(path)
+          if (deleteRoot || path != root)
+            Files.delete(path)
           FileVisitResult.CONTINUE
         } else throw e // directory iteration failed
       }
     }
 
-    Files.walkFileTree(file, deleter)
+    Files.walkFileTree(root, deleter)
   }
 
   def jarsIn(path: Path): Seq[Path] =

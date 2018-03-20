@@ -341,13 +341,16 @@ object ProfileMain {
 
       val id         = "x"
       val parent     = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
-      val outputPath = "z:\\"
+      val outputPath = "z:\\output\\"
+      val outputDir  = Path(outputPath)
+      Files.createDirectories(outputDir.toNIO)
+
       parent.createGlobal(id, outputPath, compileClassPath, otherParams, files)
       for (cycle <- 1 to runPlan.envConfig.iterations) {
         val result = parent.runGlobal(id)
         println(s" run ${runPlan.vm} # $cycle took ${result / 1000 / 1000.0} ms")
 
-        val delete = startClean(Path(outputPath))
+        val delete = startClean(outputDir)
 
         parent.doGc()
 
@@ -362,7 +365,7 @@ object ProfileMain {
     import scala.concurrent.Future
 
     Future {
-      IO.deleteDir(file.toNIO)
+      IO.deleteDir(file.toNIO, false)
     }
   }
 
