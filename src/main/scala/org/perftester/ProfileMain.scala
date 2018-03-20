@@ -48,7 +48,7 @@ object ProfileMain {
       }
     }
     def distribution(fn: PhaseResults => Double): Distribution = {
-      if (results.isEmpty) Distribution(-1, -1, -1)
+      if (size < 1) Distribution(-1, -1, -1)
       else {
         val raw  = (results map fn sorted).take(size)
         val mean = raw.sum / size
