@@ -4,6 +4,28 @@ object Configurations {
   def namesList: String = configurations.keys.mkString(",")
 
   val configurations: Map[String, List[TestConfig]] = Map(
+    "quick-dan" -> List(
+      TestConfig("baseline",
+                 BuildFromGit("cb5f0fc1ba5eb593c88de5b341d382aef6b61d72"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                 useSbt = true),
+      TestConfig("duplicated",
+                 BuildFromGit("8b116c47f78d9ba912ba47be5ceaeb77f6c957cc"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                 useSbt = true),
+      TestConfig("unneeded",
+                 BuildFromGit("6b0961f50a28aa77273081b9e0df5668a5ac8d8a"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                 useSbt = true),
+      TestConfig("privateWithin",
+                 BuildFromGit("dc90bd8d0d063f29d1b2b6e1ded34a64b1891c4e"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                 useSbt = true),
+      TestConfig("annotations",
+                 BuildFromGit("577c776fdc69ba02e78346b3a988a9c7d4a28a0a"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                 useSbt = true)
+    ),
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("ea64efaf0a71827128772585731df7635b871699"))
     ),
