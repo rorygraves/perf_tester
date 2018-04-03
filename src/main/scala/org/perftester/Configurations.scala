@@ -4,6 +4,14 @@ object Configurations {
   def namesList: String = configurations.keys.mkString(",")
 
   val configurations: Map[String, List[TestConfig]] = Map(
+    "joy" -> List(
+      TestConfig("base",
+                 BuildFromGit("30a1428925497a7358fd386db84fd982c3108707"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32")),
+      TestConfig("after",
+                 BuildFromGit("54a5aeac68e870e85e2f85abac5e5ed0b4dc689c"),
+                 extraJVMArgs = List("-XX:MaxInlineLevel=32"))
+    ),
     "quick-dan" -> List(
       TestConfig("baseline",
                  BuildFromGit("cb5f0fc1ba5eb593c88de5b341d382aef6b61d72"),
