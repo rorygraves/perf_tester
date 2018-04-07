@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
+import org.perftester.git.GitUtils
 import org.perftester.process.Compiler._
 import org.perftester.process.{IO, Parent, ProcessConfiguration}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
@@ -227,16 +228,15 @@ object ProfileMain {
     buildDefn match {
       case BuildFromGit(hash, _) =>
         try {
+          val git = GitUtils(sourceDir)
           log.info(s"Running: git fetch    (in $sourceDir)")
-          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(sourceDir)
+          git.fetchAll()
           log.info(s"Running: git reset --hard $hash    (in $sourceDir)")
-          %%("git", "reset", "--hard", hash)(sourceDir)
+          git.resetToRevision(hash)
         } catch {
-          case t: ShelloutException =>
-            if (t.result.err.string.contains("fatal: Could not parse object") ||
-                t.result.out.string.contains("fatal: Could not parse object"))
-              log.error(s"Failed to fetch and build hash $hash - '" + " cannot resolve hash")
+          case t: Exception =>
             log.error(s"Failed to execute git fetch/reset to $hash", t)
+            throw t
         }
       case bfd: BuildFromDir =>
         log.info("BuildFromDir selected - fetch skipped")
