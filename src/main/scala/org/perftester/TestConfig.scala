@@ -6,7 +6,13 @@ sealed trait BuildType {
   def forceOverwriteResults = false
 }
 
-case class BuildFromGit(sha: String, customPath: Option[Path] = None) extends BuildType
+case class BuildFromGit(baseSha: String,
+                        cherryPicks: List[String] = Nil,
+                        customPath: Option[Path] = None)
+    extends BuildType {
+  def fullShaName =
+    if (cherryPicks isEmpty) baseSha else baseSha + cherryPicks.mkString("_+_", "_+_", "")
+}
 
 case class BuildFromDir(pathStr: String,
                         override val forceOverwriteResults: Boolean = false,

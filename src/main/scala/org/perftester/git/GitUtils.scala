@@ -7,6 +7,7 @@ import ammonite.ops.Path
 import org.eclipse.jgit.api.ResetCommand.ResetType
 import org.eclipse.jgit.api.{Git, ListBranchCommand}
 import org.eclipse.jgit.internal.storage.file.FileRepository
+import org.eclipse.jgit.lib.{AnyObjectId, Ref}
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.transport.RemoteConfig
 
@@ -16,8 +17,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object WalkerApp extends App {
-  for (commit <- GitUtils("s:\\scala\\dan\\dan1\\.git").branchRevisions("refs/remotes/scala/2.12.x",
-                                                                        "refs/heads/2.12.x_flag")) {
+  for (commit <- GitUtils("s:\\scala\\dan\\scala1").branchRevisions("refs/remotes/scala/2.12.x",
+                                                                    "refs/heads/2.12.x_flag")) {
     println(s"${commit.getName} ${commit.getShortMessage} ${commit.getCommitterIdent.getName}")
   }
 }
@@ -40,11 +41,13 @@ object GitUtils {
 
 class GitUtils(repoPath: File) {
   val repository = new FileRepository(repoPath)
-  val git        = new Git(repository)
 
+  val git = new Git(repository)
   def branches = {
     git.branchList.setListMode(ListBranchCommand.ListMode.ALL).call.asScala.toList
   }
+
+  def dispose(): Unit = git.close()
 
   def resolveBranch(msg: String, branchSpec: String) = {
     val res = repository.resolve(branchSpec)
@@ -95,4 +98,8 @@ class GitUtils(repoPath: File) {
     git.reset().setMode(ResetType.HARD).setRef(rev).call()
   }
 
+  def cherryPick(sha: String): Unit = cherryPick(repository.resolve(sha))
+  def cherryPick(sha: AnyObjectId): Unit = {
+    git.cherryPick().include(sha).call()
+  }
 }
