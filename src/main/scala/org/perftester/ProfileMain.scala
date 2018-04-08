@@ -99,7 +99,13 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val commitsWithId = Configurations.configurations
+    val git = GitUtils(envConfig.checkoutDir)
+    try {
+      git.fetchAll()
+    } finally git.dispose()
+
+    val commitsWithId = Configurations
+      .configurationsFor(envConfig)
       .get(envConfig.config)
       .orElse(Option(envConfig.configString).map(parseConfigString))
       .getOrElse {
@@ -138,9 +144,9 @@ object ProfileMain {
       repeat: Int
   ): RunPlan = {
     val (sourceDir: Path, reuseScalac: Boolean, scalacPackDir: Path) = testConfig match {
-      case TestConfig(_, BuildFromGit(sha, customDir), _, _, _) =>
+      case TestConfig(_, gitBuild @ BuildFromGit(baseSha, cherryPicks, customDir), _, _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
-        val packDir   = envConfig.scalacBuildCache / sha
+        val packDir   = envConfig.scalacBuildCache / gitBuild.fullShaName
         val reused    = Files.exists(packDir / flag toNIO)
         (targetDir, reused, packDir)
       case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _, _) =>
@@ -226,17 +232,23 @@ object ProfileMain {
 
   def buildScalaC(buildDefn: BuildType, sourceDir: Path, scalaPackDir: Path): Unit = {
     buildDefn match {
-      case BuildFromGit(hash, _) =>
+      case BuildFromGit(baseSha, cherryPicks, _) =>
+        val git = GitUtils(sourceDir)
         try {
-          val git = GitUtils(sourceDir)
-          log.info(s"Running: git fetch    (in $sourceDir)")
-          git.fetchAll()
-          log.info(s"Running: git reset --hard $hash    (in $sourceDir)")
-          git.resetToRevision(hash)
+          //we always fetch once for the whole run
+          log.info(s"Running: git reset --hard $baseSha    (in $sourceDir)")
+          git.resetToRevision(baseSha)
+          cherryPicks foreach { sha =>
+            log.info(s"Running: git cherry-pick $sha    (in $sourceDir)")
+            git.cherryPick(sha)
+          }
         } catch {
           case t: Exception =>
-            log.error(s"Failed to execute git fetch/reset to $hash", t)
+            log.error(s"Failed to execute git fetch/reset to $baseSha ${if (cherryPicks isEmpty) ""
+            else "or cherry-pick to " + cherryPicks.mkString}", t)
             throw t
+        } finally {
+          git.dispose()
         }
       case bfd: BuildFromDir =>
         log.info("BuildFromDir selected - fetch skipped")
@@ -248,6 +260,7 @@ object ProfileMain {
     if (scalaPackDir != buildDir(sourceDir)) {
       val nioScalaPackDir = scalaPackDir.toNIO
       Utils.deleteDir(nioScalaPackDir)
+      Files.createDirectories(nioScalaPackDir)
 //      mkdir(scalaPackDir)
       Utils.copy(buildDir(sourceDir) toNIO, nioScalaPackDir)
     }

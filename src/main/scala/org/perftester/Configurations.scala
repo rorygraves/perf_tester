@@ -1,17 +1,85 @@
 package org.perftester
 
+import org.perftester.git.GitUtils
+
 object Configurations {
+  def configurationsFor(envConfig: EnvironmentConfig): Map[String, List[TestConfig]] =
+    configurations map {
+      case (name, generator) => name -> generator(envConfig)
+    }
+
   def namesList: String = configurations.keys.mkString(",")
 
-  val configurations: Map[String, List[TestConfig]] = Map(
-    "joy" -> List(
-      TestConfig("base",
-                 BuildFromGit("30a1428925497a7358fd386db84fd982c3108707"),
-                 extraJVMArgs = List("-XX:MaxInlineLevel=32")),
-      TestConfig("after",
-                 BuildFromGit("54a5aeac68e870e85e2f85abac5e5ed0b4dc689c"),
-                 extraJVMArgs = List("-XX:MaxInlineLevel=32"))
-    ),
+  def eachStep(baseBranch: String,
+               testBranch: String,
+               config: EnvironmentConfig): List[(String, BranchRevision)] = {
+    val git = GitUtils(config.checkoutDir.toIO)
+    val revisions = try {
+      git
+        .branchRevisions(s"refs/remotes/$baseBranch", s"refs/remotes/$testBranch")
+        .zipWithIndex
+        .map {
+          case (rev, i) => BranchRevision(i, rev)
+        }
+    } finally git.dispose()
+    val safeId = testBranch.replace('/', '_')
+    revisions map {
+      case revision if revision.index == 0 => ("baseline", revision)
+      case revision                        => (s"${safeId}-${revision.index}", revision)
+    }
+  }
+
+  def individually(baseBranch: String,
+                   testBranch: String,
+                   extraArgs: List[String] = Nil,
+                   extraJVMArgs: List[String] = Nil,
+                   useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val steps    = eachStep(baseBranch, testBranch, config)
+    val baseline = steps.head._2
+    steps.map {
+      case (name, rev) if (rev == baseline) =>
+        TestConfig(name,
+                   BuildFromGit(baseSha = baseline.sha),
+                   extraJVMArgs = extraArgs,
+                   extraArgs = extraArgs,
+                   useSbt = useSbt)
+      case (name, rev) if (rev == baseline) =>
+        val cherryPicks = List(rev.sha)
+        TestConfig(s"${name}=baseline+${rev.sha}",
+                   BuildFromGit(baseSha = baseline.sha, cherryPicks = cherryPicks),
+                   extraJVMArgs = extraArgs,
+                   extraArgs = extraArgs,
+                   useSbt = useSbt)
+    }
+  }
+
+  def series(baseBranch: String,
+             testBranch: String,
+             extraArgs: List[String] = Nil,
+             extraJVMArgs: List[String] = Nil,
+             useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val steps    = eachStep(baseBranch, testBranch, config)
+    val baseline = steps.head._2
+    steps.map {
+      case (name, rev) if (rev == baseline) =>
+        TestConfig(name,
+                   BuildFromGit(baseSha = baseline.sha),
+                   extraJVMArgs = extraArgs,
+                   extraArgs = extraArgs,
+                   useSbt = useSbt)
+      case (name, rev) =>
+        TestConfig(s"${name}=${rev.sha}",
+                   BuildFromGit(baseSha = rev.sha),
+                   extraJVMArgs = extraArgs,
+                   extraArgs = extraArgs,
+                   useSbt = useSbt)
+    }
+  }
+  private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
+    "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false)
+  )
+
+  private val staticConfiguration: Map[String, List[TestConfig]] = Map(
     "quick-dan" -> List(
       TestConfig("baseline",
                  BuildFromGit("cb5f0fc1ba5eb593c88de5b341d382aef6b61d72"),
@@ -94,29 +162,14 @@ object Configurations {
       TestConfig("run_direct",
                  BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7"),
                  useSbt = false)
-    ),
-    "quick-dan4" -> List(
-      TestConfig("baseline",
-                 BuildFromGit("8120af87ca0dcffbe5d6ebaf11bb0245e75733c2"),
-                 useSbt = false),
-      TestConfig("duplicated",
-                 BuildFromGit("569c71e18b97b5644e3e62c36dc978b60c68e3c1"),
-                 useSbt = false),
-      TestConfig("unneeded",
-                 BuildFromGit("2194cbd6629ad2c5348c81a45b926e29c25559a8"),
-                 useSbt = false),
-      TestConfig("privateWithin",
-                 BuildFromGit("e9eda17ee47e30cc64d2dc3d49f0f29f1b1a64ac"),
-                 useSbt = false),
-      TestConfig("annotations",
-                 BuildFromGit("9f6369f38b92137b8abf3008b8bcea90c8cc1a93"),
-                 useSbt = false),
-      TestConfig("flag-usage",
-                 BuildFromGit("89e60d986a109b2359489e5e6bbd8bb6b09b06b1"),
-                 useSbt = false),
-      TestConfig("scope-filtering",
-                 BuildFromGit("086123f0f96489be8c73c1d0e8103fde15142447"),
-                 useSbt = false)
     )
   )
+  val configurations: Map[String, (EnvironmentConfig) => List[TestConfig]] = {
+    val dynamicFromStatic = (staticConfiguration map {
+      case (name, config) =>
+        assert(!dynmanicConfiguration.contains(name), s"both configurations contain $name")
+        name -> ((_: EnvironmentConfig) => config)
+    })
+    dynmanicConfiguration ++ dynamicFromStatic
+  }
 }
