@@ -29,6 +29,8 @@ case class ScalacGlobalConfig(id: String,
 
 case class ScalacRun(id: String) extends Inputs
 
+case class ScalacRetire(id: String) extends Inputs
+
 case object Gc extends Inputs
 
 case object Exit extends Inputs

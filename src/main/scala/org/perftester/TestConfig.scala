@@ -18,4 +18,5 @@ case class BuildFromDir(pathStr: String,
 case class TestConfig(id: String,
                       buildDefn: BuildType,
                       extraArgs: List[String] = Nil,
-                      extraJVMArgs: List[String] = Nil)
+                      extraJVMArgs: List[String] = Nil,
+                      useSbt: Boolean = true)

@@ -80,8 +80,11 @@ object ChildMain extends App with Runnable {
             case ScalacRun(id) =>
               val holder = configs(id)
               val run    = new holder.global.Run()
-//              run.compileSources(holder.sourceFiles)
+              //              run.compileSources(holder.sourceFiles)
               run.compile(holder.rawFiles)
+            case ScalacRetire(id) =>
+              configs.remove(id).get
+              ()
             case Gc =>
               System.gc()
               System.runFinalization()
