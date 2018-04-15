@@ -2,11 +2,12 @@ package org.perftester.process
 
 import java.io.{File, ObjectInputStream, ObjectOutputStream}
 import java.lang.reflect.InvocationTargetException
-import java.net.ServerSocket
+import java.net.{ServerSocket, SocketException}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 case class ProcessConfiguration(directory: File,
@@ -52,14 +53,25 @@ class Parent(config: ProcessConfiguration) {
 
   private val t = new Thread(new Runnable {
     override def run(): Unit = {
-      while (true) {
-        val res = ois.readObject().asInstanceOf[Outputs]
-        res match {
-          case Console(err, data) =>
-            val s = new String(data)
-            (if (err) System.err else System.out).println(s"Console -- $s")
-          case c: Complete =>
-            response.success(c)
+      while (!socket.isClosed && !socket.isInputShutdown) {
+        try {
+          val res = ois.readObject().asInstanceOf[Outputs]
+          res match {
+            case Console(err, data) =>
+              val s = new String(data)
+              (if (err) System.err else System.out).println(s"Console -- $s")
+            case c: Complete =>
+              response.success(c)
+          }
+        } catch {
+          case e: SocketException
+              if (e.toString contains "Connection reset") || socket.isInputShutdown =>
+            response.tryFailure(e)
+            socket.close()
+          case NonFatal(t) =>
+            t.printStackTrace()
+            response.tryFailure(t)
+            socket.close()
         }
       }
     }
