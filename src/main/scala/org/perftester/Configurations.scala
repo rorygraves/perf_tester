@@ -75,6 +75,27 @@ object Configurations {
                    useSbt = useSbt)
     }
   }
+  def lastOnly(baseBranch: String,
+               testBranch: String,
+               extraArgs: List[String] = Nil,
+               extraJVMArgs: List[String] = Nil,
+               useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val steps                       = eachStep(baseBranch, testBranch, config)
+    val (baselineName, baselineRev) = steps.head
+    val (lastName, lastRev)         = steps.last
+    List(
+      TestConfig(baselineName,
+                 BuildFromGit(baseSha = baselineRev.sha),
+                 extraJVMArgs = extraArgs,
+                 extraArgs = extraArgs,
+                 useSbt = useSbt),
+      TestConfig(s"${baseBranch}=${lastRev.sha}",
+                 BuildFromGit(baseSha = lastRev.sha),
+                 extraJVMArgs = extraArgs,
+                 extraArgs = extraArgs,
+                 useSbt = useSbt)
+    )
+  }
   private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
     "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false)
   )

@@ -259,9 +259,8 @@ object ProfileMain {
     runSbt(List("setupPublishCore", "clean", "dist/mkPack"), sourceDir, Nil)
     if (scalaPackDir != buildDir(sourceDir)) {
       val nioScalaPackDir = scalaPackDir.toNIO
-      Utils.deleteDir(nioScalaPackDir)
       Files.createDirectories(nioScalaPackDir)
-//      mkdir(scalaPackDir)
+      Utils.deleteDir(nioScalaPackDir)
       Utils.copy(buildDir(sourceDir) toNIO, nioScalaPackDir)
     }
     Utils.touch(scalaPackDir / flag toNIO)
