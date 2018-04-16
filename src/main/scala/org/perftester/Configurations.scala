@@ -45,7 +45,7 @@ object Configurations {
                    useSbt = useSbt)
       case (name, rev) if (rev == baseline) =>
         val cherryPicks = List(rev.sha)
-        TestConfig(s"${name}=baseline+${rev.sha}",
+        TestConfig(s"${name}.baseline+${rev.sha}",
                    BuildFromGit(baseSha = baseline.sha, cherryPicks = cherryPicks),
                    extraJVMArgs = extraArgs,
                    extraArgs = extraArgs,
@@ -68,7 +68,7 @@ object Configurations {
                    extraArgs = extraArgs,
                    useSbt = useSbt)
       case (name, rev) =>
-        TestConfig(s"${name}=${rev.sha}",
+        TestConfig(s"${name}.${rev.sha}",
                    BuildFromGit(baseSha = rev.sha),
                    extraJVMArgs = extraArgs,
                    extraArgs = extraArgs,
@@ -89,7 +89,7 @@ object Configurations {
                  extraJVMArgs = extraArgs,
                  extraArgs = extraArgs,
                  useSbt = useSbt),
-      TestConfig(s"${baseBranch}=${lastRev.sha}",
+      TestConfig(s"${testBranch}.${lastRev.sha}",
                  BuildFromGit(baseSha = lastRev.sha),
                  extraJVMArgs = extraArgs,
                  extraArgs = extraArgs,
