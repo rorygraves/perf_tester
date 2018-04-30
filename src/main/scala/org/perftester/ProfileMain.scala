@@ -281,7 +281,7 @@ object ProfileMain {
         else ""
 
       val programArgs = List(
-        s"++2.12.5=$mkPackPath",
+        s"++2.13.0-M3=$mkPackPath",
         s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
           .mkString("\"", "\",\"", "\"")})"""
       )
