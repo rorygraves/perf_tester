@@ -228,15 +228,16 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         try {
           log.info(s"Running: git fetch    (in $sourceDir)")
-          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(sourceDir)
+          %%("git", "fetch")(sourceDir).out.lines.foreach(log.info)
           log.info(s"Running: git reset --hard $hash    (in $sourceDir)")
-          %%("git", "reset", "--hard", hash)(sourceDir)
+          %%("git", "reset", "--hard", hash)(sourceDir).out.lines.foreach(log.info)
         } catch {
           case t: ShelloutException =>
             if (t.result.err.string.contains("fatal: Could not parse object") ||
                 t.result.out.string.contains("fatal: Could not parse object"))
               log.error(s"Failed to fetch and build hash $hash - '" + " cannot resolve hash")
             log.error(s"Failed to execute git fetch/reset to $hash", t)
+            System.exit(1)
         }
       case bfd: BuildFromDir =>
         log.info("BuildFromDir selected - fetch skipped")
