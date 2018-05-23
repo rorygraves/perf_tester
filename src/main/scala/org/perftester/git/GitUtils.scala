@@ -1,19 +1,17 @@
 package org.perftester.git
 
 import java.io.File
-import java.rmi.server.RemoteRef
 
 import ammonite.ops.Path
 import org.eclipse.jgit.api.ResetCommand.ResetType
 import org.eclipse.jgit.api.{Git, ListBranchCommand}
 import org.eclipse.jgit.internal.storage.file.FileRepository
-import org.eclipse.jgit.lib.{AnyObjectId, Ref}
+import org.eclipse.jgit.lib.AnyObjectId
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.transport.RemoteConfig
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object WalkerApp extends App {
@@ -43,6 +41,7 @@ class GitUtils(repoPath: File) {
   val repository = new FileRepository(repoPath)
 
   val git = new Git(repository)
+
   def branches = {
     git.branchList.setListMode(ListBranchCommand.ListMode.ALL).call.asScala.toList
   }
@@ -69,7 +68,7 @@ class GitUtils(repoPath: File) {
       else resultBuilder.result()
     }
 
-    add()
+    add().reverse
   }
 
   def remotes: Map[String, RemoteConfig] =
@@ -84,22 +83,39 @@ class GitUtils(repoPath: File) {
   def fetchAll(): Unit = {
     remotes.values foreach fetch
   }
+
   def fetch(remote: String): Unit = {
     fetch(remotes(remote))
   }
+
   def fetch(remote: RemoteConfig): Unit = {
+    println(s"fetching ${remote.getName}")
     git
       .fetch()
       .setRemoveDeletedRefs(true) // -prune
       .setRemote(remote.getName)
+      .setRefSpecs(remote.getFetchRefSpecs)
+      .setDryRun(false)
+      .setCheckFetchedObjects(true)
       .call()
   }
+
   def resetToRevision(rev: String): Unit = {
-    git.reset().setMode(ResetType.HARD).setRef(rev).call()
+    println(s"resetting to $rev")
+    git
+      .reset()
+      .setMode(ResetType.HARD)
+      .setRef(rev)
+      .call()
   }
 
   def cherryPick(sha: String): Unit = cherryPick(repository.resolve(sha))
+
   def cherryPick(sha: AnyObjectId): Unit = {
-    git.cherryPick().include(sha).call()
+    println(s"cherry-pick $sha")
+    git
+      .cherryPick()
+      .include(sha)
+      .call()
   }
 }

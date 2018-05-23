@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try}
 case class ChildMainConfig(host: String = "localhost", port: Int)
 
 object ChildMain extends App with Runnable {
-  val cmd = ChildMainConfig(port = args(0).toInt)
+  val cmd = ChildMainConfig(port = Integer.parseInt(args(0)))
 
 //  System.setSecurityManager(SecMan)
 

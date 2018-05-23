@@ -20,6 +20,7 @@ object Dependencies {
   val aeronVersion = "1.3.0"
 
   val Versions = Seq(
+    //crossScalaVersions := Seq("2.13.0-M3"),
     crossScalaVersions := Seq("2.12.4"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
