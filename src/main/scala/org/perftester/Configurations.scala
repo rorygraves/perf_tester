@@ -24,7 +24,7 @@ object Configurations {
     } finally git.dispose()
     val safeId = testBranch.replace('/', '_')
     revisions map {
-      case revision if revision.index == 0 => ("baseline", revision)
+      case revision if revision.index == 0 => (s"${safeId}-base-${revision.index}", revision)
       case revision                        => (s"${safeId}-${revision.index}", revision)
     }
   }
@@ -64,13 +64,13 @@ object Configurations {
       case (name, rev) if (rev == baseline) =>
         TestConfig(name,
                    BuildFromGit(baseSha = baseline.sha),
-                   extraJVMArgs = extraArgs,
+                   extraJVMArgs = extraJVMArgs,
                    extraArgs = extraArgs,
                    useSbt = useSbt)
       case (name, rev) =>
-        TestConfig(s"${name}.${rev.sha}",
+        TestConfig(s"${name}=${rev.sha}",
                    BuildFromGit(baseSha = rev.sha),
-                   extraJVMArgs = extraArgs,
+                   extraJVMArgs = extraJVMArgs,
                    extraArgs = extraArgs,
                    useSbt = useSbt)
     }
@@ -82,14 +82,15 @@ object Configurations {
                useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
     val steps                       = eachStep(baseBranch, testBranch, config)
     val (baselineName, baselineRev) = steps.head
-    val (lastName, lastRev)         = steps.last
+    val (_, lastRev)                = steps.last
+    val lastName                    = s"${testBranch.substring(testBranch.lastIndexOf('/') + 1)}=${lastRev.sha}"
     List(
       TestConfig(baselineName,
                  BuildFromGit(baseSha = baselineRev.sha),
                  extraJVMArgs = extraArgs,
                  extraArgs = extraArgs,
                  useSbt = useSbt),
-      TestConfig(s"${testBranch}.${lastRev.sha}",
+      TestConfig(lastName,
                  BuildFromGit(baseSha = lastRev.sha),
                  extraJVMArgs = extraArgs,
                  extraArgs = extraArgs,
@@ -97,7 +98,35 @@ object Configurations {
     )
   }
   private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
-    "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false)
+    "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false),
+    "quick-13-imports" -> series("scala/2.13.x",
+                                 "origin/mike/2.13.x_implicit_import",
+                                 useSbt = true),
+    "quick-devxx"    -> lastOnly("scala/2.12.x", "origin/mike/2.12.x_developer", useSbt = false),
+    "213x_postTyper" -> lastOnly("scala/2.13.x", "origin/mike/2.13.x_postTyper", useSbt = false),
+    "212x_rangepos" -> series("scala/2.12.x",
+                              "origin/mike/2.12.x_rangepos",
+                              useSbt = false,
+                              extraArgs = List("-Yrangepos")),
+    "quick-dev" -> ((_: EnvironmentConfig) =>
+      List(
+        TestConfig("baseline",
+                   BuildFromGit("30a1428925497a7358fd386db84fd982c3108707"),
+                   extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                   useSbt = false),
+//        TestConfig("guarded-debug",
+//                   BuildFromGit("8f6b9ce1a529bbda8ba2fa8b912ac61124880d98"),
+//                   extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+//                   useSbt = true),
+        TestConfig("preferred",
+                   BuildFromGit("dde6abc6d844c6ecc4e1acaca3501cc686723c28"),
+                   extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                   useSbt = false),
+        TestConfig("noop",
+                   BuildFromGit("3cce6c792bceeff3ed1bfea968ee7d3b36348a8c"),
+                   extraJVMArgs = List("-XX:MaxInlineLevel=32"),
+                   useSbt = false)
+      ))
   )
 
   private val staticConfiguration: Map[String, List[TestConfig]] = Map(
@@ -125,6 +154,9 @@ object Configurations {
     ),
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("ea64efaf0a71827128772585731df7635b871699"))
+    ),
+    "212x_settings" -> List(
+      TestConfig("00_1.12.x", BuildFromDir("s:/scala/backend"))
     ),
     "perf1" -> List(
       TestConfig(s"baseline", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),

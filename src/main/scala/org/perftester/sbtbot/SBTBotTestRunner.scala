@@ -43,7 +43,7 @@ object SBTBotTestRunner {
     try {
       proxy.expectMsg(600.seconds, SBTBotReady)
       println("SBT Bot ready - starting run")
-      val timeout = if (debugging) 20 minutes else 4 minutes
+      val timeout = if (debugging) 20 minutes else 40 minutes
 
       for (i <- 1 to repeats) {
         implicit val sender: ActorRef = proxy.ref
