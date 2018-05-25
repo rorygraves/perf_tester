@@ -62,19 +62,20 @@ object ChildMain extends App with Runnable {
               }
               ()
             case config: ScalacGlobalConfig =>
-              val holder = configs.getOrElseUpdate(
-                config.id,
-                new GlobalHolder(new Global(newSettings(), Reporters.noInfo)))
-              val settings = holder.global.settings
+              val settings = newSettings()
 
               config.outputDirectory foreach settings.outputDirs.setSingleOutput
               config.classPath foreach { cp =>
                 settings.classpath.append(cp.mkString(File.pathSeparator))
               }
               config.otherParams foreach { params =>
+                println(s"process args ")
                 settings.processArguments(params, processAll = true)
               }
 
+              val holder = new GlobalHolder(new Global(settings, Reporters.noInfo))
+
+              configs(config.id) = holder
               config.files foreach holder.replaceFiles
 
             case ScalacRun(id) =>
@@ -104,9 +105,9 @@ object ChildMain extends App with Runnable {
 
             Right(sw.toString)
         }
-//        println(s"cmd $cmd")
-//        println(s"duration $duration")
-//        println(s"res $res")
+        println(s"cmd $cmd")
+        println(s"duration $duration")
+        println(s"res $res")
         Complete(cmd, duration, serializable).writeTo(oos)
 
       }
