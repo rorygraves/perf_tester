@@ -37,7 +37,8 @@ object GitUtils {
   def apply(repoPath: String): GitUtils = GitUtils(new File(repoPath))
 }
 
-class GitUtils(repoPath: File) {
+class GitUtils private (repoPath: File) {
+  println(s"using git in repo $repoPath")
   val repository = new FileRepository(repoPath)
 
   val git = new Git(repository)

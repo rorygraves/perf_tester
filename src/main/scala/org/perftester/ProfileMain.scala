@@ -350,7 +350,7 @@ object ProfileMain {
         List(
           "-sourcepath",
           s"${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}java${File.pathSeparator}${runPlan.envConfig.testDir}${File.separator}src${File.separator}main${File.separator}scala"
-        ) ++ profileParams
+        ) ++ profileParams ++ runPlan.testConfig.extraArgs
 
       val id         = "x"
       val parent     = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
