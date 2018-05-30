@@ -3,9 +3,8 @@ package org.perftester
 import java.io.File
 import java.nio.file.{Files, Paths}
 
-import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
+import ammonite.ops.{Command, Path, Shellout, read}
 import org.perftester.git.GitUtils
-import org.perftester.process.Compiler._
 import org.perftester.process.{IO, Parent, ProcessConfiguration}
 import org.perftester.renderer.{HtmlRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunDetails, RunResult}
@@ -99,10 +98,17 @@ object ProfileMain {
 
   def runBenchmark(envConfig: EnvironmentConfig): Unit = {
 
-    val git = GitUtils(envConfig.checkoutDir)
-    try {
-      git.fetchAll()
-    } finally git.dispose()
+    //for some reason the jgit command doesnt work
+    //so use the shell
+    log.info(s"Running: git fetch    (in ${envConfig.checkoutDir})")
+    Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch", "--all")(
+      envConfig.checkoutDir)
+
+    //jgit API that doesnt work please fix
+    //    val git = GitUtils(envConfig.checkoutDir)
+    //    try {
+    //      git.fetchAll()
+    //    } finally git.dispose()
 
     val commitsWithId = Configurations
       .configurationsFor(envConfig)
@@ -373,6 +379,7 @@ object ProfileMain {
       parent.doExit()
     }
   }
+
   def startClean(file: Path) = {
     import scala.concurrent.ExecutionContext.Implicits.global
     import scala.concurrent.Future
