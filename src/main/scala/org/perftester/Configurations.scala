@@ -108,6 +108,10 @@ object Configurations {
                               "origin/mike/2.12.x_rangepos",
                               useSbt = false,
                               extraArgs = List("-Yrangepos")),
+    "212x_rangepos_pr" -> series("scala/2.12.x",
+                                 "origin/mike/2.12.x_rangepos_pr",
+                                 useSbt = false,
+                                 extraArgs = List("-Yrangepos")),
     "quick-dev" -> ((_: EnvironmentConfig) =>
       List(
         TestConfig("baseline",
