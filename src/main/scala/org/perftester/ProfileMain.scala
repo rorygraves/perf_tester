@@ -6,7 +6,7 @@ import java.nio.file.{Files, Paths}
 import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
 import org.perftester.process.Compiler._
 import org.perftester.process.{IO, Parent, ProcessConfiguration}
-import org.perftester.renderer.{HtmlRenderer, TextRenderer}
+import org.perftester.renderer.{HtmlRenderer, PhaseRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunDetails, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,7 +35,16 @@ object ProfileMain {
   def printAggResults(cycleId: Int,
                       testConfig: TestConfig,
                       results: Seq[PhaseResults],
-                      limit: Double): Unit = {
+                      limit: Double): Unit =
+    println(renderAggResults(cycleId, testConfig, results, limit))
+
+  def aggResultsHeading(title: String) =
+    f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s"
+
+  def renderAggResults(cycleId: Int,
+                       testConfig: TestConfig,
+                       results: Seq[PhaseResults],
+                       limit: Double): String = {
 
     val size = (results.size * limit).toInt
     case class Distribution(min: Double, max: Double, mean: Double) {
@@ -71,16 +80,16 @@ object ProfileMain {
     val allCpuMsStr          = allCpuTimeAvg.formatted(6, 2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
     val allIdleMsStr         = allIdleAvg.formatted(6, 2)
-    println(
-      "%25s\t%4s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
-        .format(testConfig.id,
-                cycleId,
-                size,
-                wallMsStr,
-                allWallMsStr,
-                allCpuMsStr,
-                allIdleMsStr,
-                allAllocatedBytesStr))
+
+    "%25s\t%4s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
+      .format(testConfig.id,
+              cycleId,
+              size,
+              wallMsStr,
+              allWallMsStr,
+              allCpuMsStr,
+              allIdleMsStr,
+              allAllocatedBytesStr)
 
   }
 
@@ -127,6 +136,9 @@ object ProfileMain {
 
     TextRenderer.outputTextResults(envConfig, results)
     HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
+
+    println("\n\n")
+    println(PhaseRenderer.outputHtmlResults(outputFolder, envConfig, results))
   }
 
   def planRun(

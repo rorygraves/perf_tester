@@ -1,18 +1,18 @@
 package org.perftester.renderer
 
 import org.perftester.ProfileMain.printAggResults
-import org.perftester.{EnvironmentConfig, TestConfig}
+import org.perftester.{EnvironmentConfig, ProfileMain, TestConfig}
 import org.perftester.results.{PhaseResults, RunDetails, RunResult}
 import org.perftester.results.rows.MainPhaseRow
 
 import scala.collection.mutable
 
 object TextRenderer {
+
   def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = {
-    def heading(title: String) {
-      println(
-        f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
-    }
+
+    def heading(title: String) = println(ProfileMain.aggResultsHeading(title))
+
     def allPhases(raw: Seq[PhaseResults]): Seq[PhaseResults] = {
       val res = raw.groupBy(_.iterationId) map {
         case (iterationNo, iterationData) =>
