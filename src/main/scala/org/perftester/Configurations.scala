@@ -37,6 +37,31 @@ object Configurations {
     "212x" -> List(
       TestConfig("00_1.12.x", BuildFromGit("ea64efaf0a71827128772585731df7635b871699"))
     ),
+    "par_parser" -> List(
+      TestConfig(s"baseline", BuildFromDir("/home/kromanowski/workspace/scalas/basline")),
+      TestConfig(s"par4",
+                 BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+                 extraArgs = List("-Yparallel-threads", "4", "-Yparallel-phases:parser")),
+      TestConfig(s"par16",
+                 BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+                 extraArgs = List("-Yparallel-threads", "16", "-Yparallel-phases:parser")),
+//      TestConfig(s"par64",
+//                 BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+//                 extraArgs = List("-Yparallel-threads", "64", "-Yparallel-phases:parser")),
+      TestConfig(s"baseline-range",
+                 BuildFromDir("/home/kromanowski/workspace/scalas/basline"),
+                 extraArgs = List("-Yrangepos")),
+      TestConfig(
+        s"par4-range",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs = List("-Yparallel-threads", "4", "-Yrangepos", "-Yparallel-phases:parser")
+      ),
+      TestConfig(
+        s"par16-range",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs = List("-Yparallel-threads", "16", "-Yrangepos", "-Yparallel-phases:parser")
+      ),
+    ),
     "perf1" -> List(
       TestConfig(s"baseline", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
       TestConfig(s"ownerChain", BuildFromGit("18fba7f906523dc9363dde1366c4f68d1cbe8954"))

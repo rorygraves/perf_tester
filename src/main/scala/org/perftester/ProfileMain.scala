@@ -6,7 +6,7 @@ import java.nio.file.{Files, Paths}
 import ammonite.ops.{%%, Command, Path, Shellout, ShelloutException, read}
 import org.perftester.process.Compiler._
 import org.perftester.process.{IO, Parent, ProcessConfiguration}
-import org.perftester.renderer.{HtmlRenderer, TextRenderer}
+import org.perftester.renderer.{HtmlRenderer, PhaseRenderer, TextRenderer}
 import org.perftester.results.{PhaseResults, ResultReader, RunDetails, RunResult}
 import org.perftester.sbtbot.SBTBotTestRunner
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,7 +35,16 @@ object ProfileMain {
   def printAggResults(cycleId: Int,
                       testConfig: TestConfig,
                       results: Seq[PhaseResults],
-                      limit: Double): Unit = {
+                      limit: Double): Unit =
+    println(renderAggResults(cycleId, testConfig, results, limit))
+
+  def aggResultsHeading(title: String) =
+    f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s"
+
+  def renderAggResults(cycleId: Int,
+                       testConfig: TestConfig,
+                       results: Seq[PhaseResults],
+                       limit: Double): String = {
 
     val size = (results.size * limit).toInt
     case class Distribution(min: Double, max: Double, mean: Double) {
@@ -52,7 +61,7 @@ object ProfileMain {
       }
     }
     def distribution(fn: PhaseResults => Double): Distribution = {
-      if (results.isEmpty) Distribution(-1, -1, -1)
+      if (size < 1) Distribution(-1, -1, -1)
       else {
         val raw  = (results map fn sorted).take(size)
         val mean = raw.sum / size
@@ -71,16 +80,16 @@ object ProfileMain {
     val allCpuMsStr          = allCpuTimeAvg.formatted(6, 2)
     val allAllocatedBytesStr = allAllocatedBytes.formatted(6, 2)
     val allIdleMsStr         = allIdleAvg.formatted(6, 2)
-    println(
-      "%25s\t%4s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
-        .format(testConfig.id,
-                cycleId,
-                size,
-                wallMsStr,
-                allWallMsStr,
-                allCpuMsStr,
-                allIdleMsStr,
-                allAllocatedBytesStr))
+
+    "%25s\t%4s\t%4s\t%25s\t%25s\t%25s\t%25s\t%25s"
+      .format(testConfig.id,
+              cycleId,
+              size,
+              wallMsStr,
+              allWallMsStr,
+              allCpuMsStr,
+              allIdleMsStr,
+              allAllocatedBytesStr)
 
   }
 
@@ -127,6 +136,9 @@ object ProfileMain {
 
     TextRenderer.outputTextResults(envConfig, results)
     HtmlRenderer.outputHtmlResults(outputFolder, envConfig, results)
+
+    println("\n\n")
+    println(PhaseRenderer.outputHtmlResults(outputFolder, envConfig, results))
   }
 
   def planRun(
@@ -228,15 +240,16 @@ object ProfileMain {
       case BuildFromGit(hash, _) =>
         try {
           log.info(s"Running: git fetch    (in $sourceDir)")
-          Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch")(sourceDir)
+          %%("git", "fetch")(sourceDir).out.lines.foreach(log.info)
           log.info(s"Running: git reset --hard $hash    (in $sourceDir)")
-          %%("git", "reset", "--hard", hash)(sourceDir)
+          %%("git", "reset", "--hard", hash)(sourceDir).out.lines.foreach(log.info)
         } catch {
           case t: ShelloutException =>
             if (t.result.err.string.contains("fatal: Could not parse object") ||
                 t.result.out.string.contains("fatal: Could not parse object"))
               log.error(s"Failed to fetch and build hash $hash - '" + " cannot resolve hash")
             log.error(s"Failed to execute git fetch/reset to $hash", t)
+            System.exit(1)
         }
       case bfd: BuildFromDir =>
         log.info("BuildFromDir selected - fetch skipped")
@@ -280,7 +293,7 @@ object ProfileMain {
         else ""
 
       val programArgs = List(
-        s"++2.12.5=$mkPackPath",
+        s"++2.13.0-M3=$mkPackPath",
         s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
           .mkString("\"", "\",\"", "\"")})"""
       )

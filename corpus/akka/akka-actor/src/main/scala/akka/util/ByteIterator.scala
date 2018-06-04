@@ -274,7 +274,7 @@ object ByteIterator {
       normalize()
     }
 
-    @tailrec final override def dropWhile(p: Byte ⇒ Boolean): this.type =
+    final override def dropWhile(p: Byte ⇒ Boolean): this.type =
       if (!isEmpty) {
         current.dropWhile(p)
         val dropMore = current.isEmpty
@@ -309,7 +309,7 @@ object ByteIterator {
       }
     }
 
-    @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
+    protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
       if (n <= 0) this else {
         if (isEmpty) Iterator.empty.next
         val nDone = if (current.len >= elemSize) {
