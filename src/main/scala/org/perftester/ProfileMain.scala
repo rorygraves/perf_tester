@@ -113,11 +113,12 @@ object ProfileMain {
     val commitsWithId = Configurations
       .configurationsFor(envConfig)
       .get(envConfig.config)
-      .orElse(Option(envConfig.configString).map(parseConfigString))
+      .orElse(Option(envConfig.configString).map(configString =>
+        (() => parseConfigString(configString))))
       .getOrElse {
         println(s"[ERROR] Config ${envConfig.config} not found")
         throw new IllegalArgumentException(s"Config ${envConfig.config} not found")
-      }
+      }()
 
     val outputFolder = envConfig.outputDir / envConfig.username / envConfig.config
     Files.createDirectories(outputFolder.toNIO)
@@ -298,8 +299,7 @@ object ProfileMain {
         else ""
 
       val programArgs = List(
-        //s"++2.13.0-M3=$mkPackPath",
-        s"++2.12.5=$mkPackPath",
+        s"""set scalaHome := Some(file("$mkPackPath"))""",
         s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
           .mkString("\"", "\",\"", "\"")})"""
       )
