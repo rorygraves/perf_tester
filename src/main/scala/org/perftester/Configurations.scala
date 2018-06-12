@@ -3,9 +3,9 @@ package org.perftester
 import org.perftester.git.GitUtils
 
 object Configurations {
-  def configurationsFor(envConfig: EnvironmentConfig): Map[String, List[TestConfig]] =
+  def configurationsFor(envConfig: EnvironmentConfig): Map[String, () => List[TestConfig]] =
     configurations map {
-      case (name, generator) => name -> generator(envConfig)
+      case (name, generator) => name -> (() => generator(envConfig))
     }
 
   def namesList: String = configurations.keys.mkString(",")
