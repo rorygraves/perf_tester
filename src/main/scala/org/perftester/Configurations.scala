@@ -87,12 +87,12 @@ object Configurations {
     List(
       TestConfig(baselineName,
                  BuildFromGit(baseSha = baselineRev.sha),
-                 extraJVMArgs = extraArgs,
+                 extraJVMArgs = extraJVMArgs,
                  extraArgs = extraArgs,
                  useSbt = useSbt),
       TestConfig(lastName,
                  BuildFromGit(baseSha = lastRev.sha),
-                 extraJVMArgs = extraArgs,
+                 extraJVMArgs = extraJVMArgs,
                  extraArgs = extraArgs,
                  useSbt = useSbt)
     )
