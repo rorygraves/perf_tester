@@ -64,8 +64,11 @@ object TextRenderer {
       case RunDetails(cycleId, testId, RunResult(testConfig, rawData, iteration, phases)) =>
         printAggResults(cycleId, testConfig, allPhases(rawData), 1)
     }
-    val phases: mutable.LinkedHashSet[String] =
+    val allStatsPhases: mutable.LinkedHashSet[String] =
       results.toList.flatMap(_.runResult.phases)(scala.collection.breakOut)
+    val phases = allStatsPhases.filter {
+      case phase => envConfig.summaryPhases.exists(_.pattern.matcher(phase).matches())
+    }
 
     if (envConfig.iterations > 10) {
       val (min, max) = envConfig.summaryPercent
