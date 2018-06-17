@@ -8,7 +8,19 @@ import org.perftester.results.rows.MainPhaseRow
 import scala.collection.mutable
 
 object TextRenderer {
-  def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = {
+  private def getOut(envConfig: EnvironmentConfig) = {
+    import java.io.PrintStream
+    import java.nio.file.Files
+    import java.nio.file.StandardOpenOption._
+
+    envConfig.summaryFile match {
+      case None => Console.out
+      case Some(file) =>
+        Files.createDirectories(file.toNIO)
+        new PrintStream(Files.newOutputStream(file.toNIO, WRITE, CREATE, TRUNCATE_EXISTING))
+    }
+  }
+  def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = Console.withOut(getOut(envConfig)){
     def heading(title: String) {
       println(
         f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
