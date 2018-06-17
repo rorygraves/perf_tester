@@ -97,6 +97,23 @@ object Configurations {
                  useSbt = useSbt)
     )
   }
+  def branchLatest(baseBranch: String,
+                   testBranch: String,
+                   extraArgs: List[String] = Nil,
+                   extraJVMArgs: List[String] = Nil,
+                   useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val steps                       = eachStep(baseBranch, testBranch, config)
+    val (baselineName, baselineRev) = steps.head
+    val (_, lastRev)                = steps.last
+    val lastName                    = s"${testBranch.substring(testBranch.lastIndexOf('/') + 1)}=${lastRev.sha}"
+    List(
+      TestConfig(lastName,
+                 BuildFromGit(baseSha = lastRev.sha),
+                 extraJVMArgs = extraJVMArgs,
+                 extraArgs = extraArgs,
+                 useSbt = useSbt)
+    )
+  }
   private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
     "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false),
     "quick-13-imports" -> series("scala/2.13.x",
@@ -108,6 +125,19 @@ object Configurations {
                               "origin/mike/2.12.x_rangepos",
                               useSbt = false,
                               extraArgs = List("-Yrangepos")),
+    "212x_rangepos_last" -> branchLatest(
+      "scala/2.12.x",
+      "origin/mike/2.12.x_rangepos",
+      useSbt = false,
+      extraArgs = List("-Yrangepos"),
+      extraJVMArgs = List(
+        "-XX:+UnlockCommercialFeatures",
+        "-XX:+FlightRecorder",
+        "-XX:FlightRecorderOptions=stackdepth=4096",
+        "-XX:+UnlockDiagnosticVMOptions",
+        "-XX:+DebugNonSafepoints"
+      )
+    ),
     "212x_rangepos_pr" -> series("scala/2.12.x",
                                  "origin/mike/2.12.x_rangepos_pr",
                                  useSbt = false,
