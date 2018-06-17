@@ -68,8 +68,10 @@ object TextRenderer {
       results.toList.flatMap(_.runResult.phases)(scala.collection.breakOut)
 
     if (envConfig.iterations > 10) {
+      val (min, max) = envConfig.summaryPercent
+      val range = ((100 until (0, -5)).toList ::: List(1, Math.max(1,min), max)).distinct.sorted
       for (i      <- List(0); //<- 10 until (envConfig.iterations, 10);
-           bestPC <- (100 until (0, -5)).toList ::: List(1)) {
+           bestPC <- range) {
         println(
           "\n---------------------------------------------------------------------------------------------------")
         println(
