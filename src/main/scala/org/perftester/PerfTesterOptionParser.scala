@@ -98,6 +98,46 @@ object PerfTesterOptionParser {
         .action((_, c) => c.copy(analyseOnly = true))
         .text("only run analysis (default false)")
 
+      opt[Unit]("summaryBaseline")
+        .action((_, c) => c.copy(summaryBaseline = true))
+        .text("provide a comparision against baseline (default false)")
+
+      opt[File]("summaryFile")
+        .valueName("<file>")
+        .action {
+          case (x, c) =>
+            c.copy(summaryFile = Some(Path(x.getAbsolutePath)))
+        }
+        .text("Write summary to file instead of console")
+
+      opt[String]("summaryPhases")
+        .valueName("<phase>[,<phase>]*")
+        .action {
+          case (x, c) =>
+            c.copy(summaryPhases = x.split(",").map{_.r}.toList
+        }
+        .text("Write summary to file instead of console")
+
+      opt[String]("summaryRange")
+        .valueName("<int,int>")
+        .action {
+          case (x, c) =>
+            x.split(",").map (_.toInt).toList match {
+              case x :: y :: Nil =>
+                val min = Math.min(x,y)
+                val max = Math.max(x,y)
+                require (min >= 0, "Percentage minimum is 0")
+                require (max <= 100, "Percentage maximum is 0")
+                c.copy(summaryPercent = (min,max))
+              case x :: Nil =>
+                require (x >= 0, "Percentage minimum is 0")
+                require (x <= 100, "Percentage maximum is 0")
+                c.copy(summaryPercent = (x,x))
+              case e => throw new Exception(s"one or 2 numbers - not '$e'")
+            }
+        }
+        .text("minimum and optional maximum percentage (both inclusive) to include in summary")
+
       help("help").text("prints this usage text")
 
     }
