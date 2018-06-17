@@ -29,7 +29,7 @@ case class PhaseResults(main: MainPhaseRow,
       _.duration
     }.sum
 
-  def toMs(ns: Long) = ns / 1000000
+  private def toMs(ns: Long) = ns / 1000000
 
-  def sumAll(fn: PhaseRow => Long) = fn(main) + (background map fn).sum
+  private def sumAll(fn: PhaseRow => Long) = fn(main) + (background map fn).sum
 }
