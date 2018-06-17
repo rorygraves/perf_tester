@@ -2,6 +2,8 @@ package org.perftester
 
 import ammonite.ops.Path
 
+import scala.util.matching.Regex
+
 case class EnvironmentConfig(
                              // the name of the user running the test - used in results directory
                              username: String = "",
@@ -16,4 +18,8 @@ case class EnvironmentConfig(
                              configString: String = null,
                              analyseOnly: Boolean = false,
                              runWithDebug: Boolean = false,
-                             overwriteResults: Boolean = true)
+                             overwriteResults: Boolean = true,
+                             summaryFile: Option[Path] = None,
+                             summaryPhases: List[Regex] = List(".*".r),
+                             summaryPercent: (Int, Int) = (0, 100),
+                             summaryBaseline: Boolean = false)
