@@ -119,22 +119,18 @@ object PerfTesterOptionParser {
         .text("Write summary to file instead of console")
 
       opt[String]("summaryRange")
-        .valueName("<int,int>")
+        .valueName("<int[,int]*>")
         .action {
           case (x, c) =>
-            x.split(",").map(_.toInt).toList match {
-              case x :: y :: Nil =>
-                val min = Math.min(x, y)
-                val max = Math.max(x, y)
-                require(min >= 0, "Percentage minimum is 0")
-                require(max <= 100, "Percentage maximum is 0")
-                c.copy(summaryPercent = (min, max))
-              case x :: Nil =>
-                require(x >= 0, "Percentage minimum is 0")
-                require(x <= 100, "Percentage maximum is 0")
-                c.copy(summaryPercent = (x, x))
-              case e => throw new Exception(s"one or 2 numbers - not '$e'")
+            val values = x.split(",").map(_.toInt).toList.distinct.sorted
+            require(!values.isEmpty, "there must be at least one percentage")
+
+            values foreach { v =>
+              require(v >= 1 && v <= 100,
+                      s"Illegal value  - percentages must be between 1 and 100 inclusive, not $v")
             }
+
+            c.copy(summaryPercent = values)
         }
         .text("minimum and optional maximum percentage (both inclusive) to include in summary")
 
