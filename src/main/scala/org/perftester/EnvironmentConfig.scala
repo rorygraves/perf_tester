@@ -21,5 +21,6 @@ case class EnvironmentConfig(
                              overwriteResults: Boolean = true,
                              summaryFile: Option[Path] = None,
                              summaryPhases: List[Regex] = List(".*".r),
-                             summaryPercent: (Int, Int) = (0, 100),
+                             summaryPercent: List[Int] =
+                               ((100 until (0, -5)).toList ::: List(1)).distinct.sorted,
                              summaryBaseline: Boolean = false)

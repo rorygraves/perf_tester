@@ -20,17 +20,23 @@ object TextRenderer {
         new PrintStream(Files.newOutputStream(file.toNIO, WRITE, CREATE, TRUNCATE_EXISTING))
     }
   }
-  def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit = Console.withOut(getOut(envConfig)){
-    def heading(title: String) {
-      println(
-        f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
+  def outputTextResults(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit =
+    Console.withOut(getOut(envConfig)) {
+      outputTextResultsDetails(envConfig, results)
+      if (envConfig.summaryBaseline) {}
     }
-    def allPhases(raw: Seq[PhaseResults]): Seq[PhaseResults] = {
-      val res = raw.groupBy(_.iterationId) map {
-        case (iterationNo, iterationData) =>
-          val first   = iterationData.head
-          val startNs = iterationData.sortBy(_.main.startNs).head.main.startNs
-          val endNs   = iterationData.sortBy(-_.main.endNs).head.main.endNs
+  def outputTextResultsDetails(envConfig: EnvironmentConfig, results: Iterable[RunDetails]): Unit =
+    Console.withOut(getOut(envConfig)) {
+      def heading(title: String) {
+        println(
+          f"-----\n$title\n${"Run Name"}%25s\tCycle\tsamples\t${"Wall time (ms)"}%25s\t${"All Wall time (ms)"}%25s\t${"CPU(ms)"}%25s\t${"Idle time (ms)"}%25s\t${"Allocated(MBs)"}%25s")
+      }
+      def allPhases(raw: Seq[PhaseResults]): Seq[PhaseResults] = {
+        val res = raw.groupBy(_.iterationId) map {
+          case (iterationNo, iterationData) =>
+            val first   = iterationData.head
+            val startNs = iterationData.sortBy(_.main.startNs).head.main.startNs
+            val endNs   = iterationData.sortBy(-_.main.endNs).head.main.endNs
 
             val mainPhaseRow: MainPhaseRow = MainPhaseRow(
               startNs = startNs,
@@ -71,8 +77,7 @@ object TextRenderer {
       }
 
       if (envConfig.iterations > 10) {
-        val (min, max) = envConfig.summaryPercent
-        val range      = ((100 until (0, -5)).toList ::: List(1, Math.max(1, min), max)).distinct.sorted
+        val range = envConfig.summaryPercent
         for (i      <- List(0); //<- 10 until (envConfig.iterations, 10);
              bestPC <- range) {
           println(
