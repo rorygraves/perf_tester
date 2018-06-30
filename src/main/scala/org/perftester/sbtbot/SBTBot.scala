@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props
 import akka.io.Tcp._
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
-import ammonite.ops.{Path, FilePath, read, up}
+import ammonite.ops.{Path, read}
 import com.fasterxml.jackson.core.JsonParseException
 import org.perftester.ProfileMain
 import org.perftester.sbtbot.SBTBot._
