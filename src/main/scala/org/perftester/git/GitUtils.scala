@@ -3,6 +3,8 @@ package org.perftester.git
 import java.io.File
 
 import ammonite.ops.Path
+import org.apache.commons.logging.LogFactory
+import org.eclipse.jgit.api.CherryPickResult.CherryPickStatus
 import org.eclipse.jgit.api.ResetCommand.ResetType
 import org.eclipse.jgit.api.{Git, ListBranchCommand}
 import org.eclipse.jgit.internal.storage.file.FileRepository
@@ -38,10 +40,11 @@ object GitUtils {
 }
 
 class GitUtils private (repoPath: File) {
-  println(s"using git in repo $repoPath")
-  val repository = new FileRepository(repoPath)
+  val logger = LogFactory.getLog(s"GitUtils($repoPath)")
+  logger.info(s"using git in repo $repoPath")
 
-  val git = new Git(repository)
+  val repository = new FileRepository(repoPath)
+  val git        = new Git(repository)
 
   def branches = {
     git.branchList.setListMode(ListBranchCommand.ListMode.ALL).call.asScala.toList
@@ -90,7 +93,7 @@ class GitUtils private (repoPath: File) {
   }
 
   def fetch(remote: RemoteConfig): Unit = {
-    println(s"fetching ${remote.getName}")
+    logger.info(s"fetching ${remote.getName}")
     git
       .fetch()
       .setRemoveDeletedRefs(true) // -prune
@@ -102,21 +105,36 @@ class GitUtils private (repoPath: File) {
   }
 
   def resetToRevision(rev: String): Unit = {
-    println(s"resetting to $rev")
+    logger.info(s"Reset to revision: $rev")
+    logger.info(s"Executing git reset --hard $rev")
+
+    // git reset --hard $rev
     git
       .reset()
       .setMode(ResetType.HARD)
       .setRef(rev)
       .call()
+
+    // git clean -fxd
+    // scala build can sometimes break if, for example, switching from 2.12.x to 2.13.x
+    logger.info(s"Executing git reset --hard $rev")
+    git.clean().setForce(true).setIgnore(false).setCleanDirectories(true).call()
   }
 
   def cherryPick(sha: String): Unit = cherryPick(repository.resolve(sha))
 
   def cherryPick(sha: AnyObjectId): Unit = {
-    println(s"cherry-pick $sha")
-    git
+    logger.info(s"git cherry-pick $sha")
+    val res = git
       .cherryPick()
       .include(sha)
       .call()
+    res match {
+      case CherryPickStatus.OK =>
+        logger.info("Cherry pick successful")
+      case _ =>
+        logger.error("Cherry pick failed: " + res.getStatus)
+        throw new IllegalStateException(s"Failed to perform cherry-pick of $sha")
+    }
   }
 }

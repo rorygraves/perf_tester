@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonParseException
 import org.perftester.ProfileMain
 import org.perftester.sbtbot.SBTBot._
 import org.perftester.sbtbot.process._
+import org.slf4j.LoggerFactory
 import play.api.libs.json.Json
 
 object SBTBot {
@@ -37,16 +38,24 @@ object SBTBot {
     */
   final case class SBTCommand(cmd: String, id: String)
 
-  def props(workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: List[String]): Props = {
-    Props(new SBTBot(workspaceRootDir, sbtArgs, jvmArgs))
+  def props(workspaceRootDir: Path,
+            sbtArgs: List[String],
+            jvmArgs: List[String],
+            debug: Boolean): Props = {
+    Props(new SBTBot(workspaceRootDir, sbtArgs, jvmArgs, debug))
   }
 }
 
-class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: List[String])
+class SBTBot private (workspaceRootDir: Path,
+                      sbtArgs: List[String],
+                      jvmArgs: List[String],
+                      debug: Boolean)
     extends Actor
     with ActorLogging {
 
   import java.util.UUID
+
+  val consoleLog = LoggerFactory.getLogger("SBTBotConsole")
 
   implicit val as: ActorSystem = context.system
   private val promptStr        = UUID.randomUUID().toString
@@ -71,6 +80,7 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
       s"""set shellPrompt := ( _ =>  \"$promptStr\n\")"""*/ ) :::
     sbtArgs ::: List(
     s"""set shellPrompt := ( _ =>  "$promptStr" + System.getProperty("line.separator"))""",
+    "about",
     "shell") map escape
 
   def escape(s: String): String =
@@ -97,7 +107,7 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
       log.warning(s"Got exit code $exitCode")
       context.parent ! SBTExited(exitCode)
     case ProcessIO(source, content) =>
-      log.info(s"SBTBOT:${source.shortName}: $content")
+      consoleLog.info(s"${source.shortName}: $content")
       if (content.contains(promptStr)) {
         connectToServer()
       }
@@ -184,8 +194,10 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
       currentBytes = currentBytes ++ bs
       val (messages, newBytes) = extractMessages(currentBytes)
       currentBytes = newBytes
-      messages.foreach { m =>
-        println(" MESSAGE = " + m)
+      if (debug) {
+        messages.foreach { m =>
+          consoleLog.info("   MESSAGE " + m)
+        }
       }
       if (messages.exists(_.contains("\"Done\""))) {
         log.info("Seen done")
@@ -333,14 +345,14 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
       log.warning(s"ACT Got exit code $exitCode")
       context.parent ! SBTExited(exitCode)
     case ProcessIO(source, content) =>
-      log.info(s"ACT Got process IO $source $content")
+      consoleLog.info(s"ACT Got process IO $source $content")
       io :+= content
       if (io.last.contains("Total time: ")) {
-        println("SEEN TOTAL")
+        if (debug) log.debug("Seen total time message")
         seenIOTotalTime = true
         checkActiveComplete()
       } else if (io.last.contains(promptStr)) {
-        println("SEEN COMPLETE")
+        if (debug) log.debug("Seen complete")
         seenComplete = true
         checkActiveComplete()
       }
@@ -349,7 +361,7 @@ class SBTBot private (workspaceRootDir: Path, sbtArgs: List[String], jvmArgs: Li
       val (messages, newBytes) = extractMessages(currentBytes)
       currentBytes = newBytes
       messages.foreach { m =>
-        println(" MESSAGE = " + m)
+        consoleLog.info("msg: " + m)
       }
       if (messages.exists(_.contains("\"Done\""))) {
         println("SEEN DONE!")

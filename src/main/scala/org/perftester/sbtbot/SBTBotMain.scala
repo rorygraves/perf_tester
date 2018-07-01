@@ -16,7 +16,8 @@ object SBTBotMain {
       val child: ActorRef =
         context.actorOf(SBTBot.props(root / "workspace" / "perf_tester" / "corpus" / "akka",
                                      List.empty,
-                                     List.empty),
+                                     List.empty,
+                                     true),
                         "sbtbot")
 
       def receive: Receive = {

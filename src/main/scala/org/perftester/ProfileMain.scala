@@ -299,9 +299,11 @@ object ProfileMain {
         else ""
 
       val programArgs = List(
+        s"""set scalaVersion := "2.13.0-M4"""",
         s"""set scalaHome := Some(file("$mkPackPath"))""",
         s"""set scalacOptions in ThisBuild ++= List($extraArgsStr${profileParams
-          .mkString("\"", "\",\"", "\"")})"""
+          .mkString("\"", "\",\"", "\"")})""",
+        "about"
       )
 
       val dotfile = runPlan.envConfig.testDir / ".perf_tester"

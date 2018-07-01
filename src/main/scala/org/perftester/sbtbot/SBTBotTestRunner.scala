@@ -30,7 +30,7 @@ object SBTBotTestRunner {
     val proxy = TestProbe()
     val parent = actorSystem.actorOf(Props(new Actor {
       val child: ActorRef =
-        context.actorOf(SBTBot.props(testDir, programArgs, jvmArgs), "sbtbot")
+        context.actorOf(SBTBot.props(testDir, programArgs, jvmArgs, debugging), "sbtbot")
 
       def receive: Receive = {
         case x if sender == child => proxy.ref forward x
