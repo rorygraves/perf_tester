@@ -164,7 +164,7 @@ case object BackgroundDataRowType extends DataRowType[BackgroundPhaseRow]("backg
 
 case object GCDataRowType extends DataRowType[GCDataRow]("GC") {
   override def parse(values: List[String], version: Int) =
-    //header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+  //header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
     GCDataRow(
       values(1).toLong, // startNs
       values(2).toLong, // endNs
@@ -185,7 +185,40 @@ case class GCDataRow(startNs: Long,
                      action: String,
                      cause: String,
                      threads: Int)
-    extends DataRow {
+  extends DataRow {
+  override def rowType = GCDataRowType
+}
+
+case object LockDataRowType extends DataRowType[LockDataRow]("lock") {
+  override def parse(values: List[String], version: Int) =
+  //    out.println(s"header(lock),startNs,endNs,runId,phaseId,phaseName,lock-name,lockId,accessCount,contentedWrite,uncontendedWrites,contendedWriteNs")
+    LockDataRow(
+      values(1).toLong, // startNs
+      values(2).toLong, // endNs
+      values(3).toLong, // runId
+      values(4).toLong, // phaseId
+      values(5), // phaseName
+      values(6), // lock-name
+      values(7).toLong, // lockId
+      values(8).toLong, // accessCount
+      values(9).toLong, // contentedWrite
+      values(10).toLong, // uncontendedWrites
+      values(11).toLong // contendedWriteNs
+    )
+}
+
+case class LockDataRow(startNs: Long,
+                       endNs: Long,
+                       runId: Long,
+                       phaseId: Long,
+                       phaseName: String,
+                       lockName: String,
+                       lockId: Long,
+                       accessCount: Long,
+                       contentedWriteCount: Long,
+                       uncontentedWriteCount: Long,
+                       contentedWriteNs: Long)
+  extends DataRow {
   override def rowType = GCDataRowType
 }
 

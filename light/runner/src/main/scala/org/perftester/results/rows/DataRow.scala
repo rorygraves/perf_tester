@@ -53,7 +53,7 @@ sealed trait PhaseRow extends DataRow {
 
 case object DataRowType {
   val allTypes: Map[String, DataRowType[_ <: DataRow]] =
-    List(GCDataRowType, MainDataRowType, BackgroundDataRowType).map { v =>
+    List(GCDataRowType, MainDataRowType, BackgroundDataRowType, LockDataRowType).map { v =>
       v.typeStr -> v
     }(scala.collection.breakOut)
 }
