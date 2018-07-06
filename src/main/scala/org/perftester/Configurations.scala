@@ -171,6 +171,14 @@ object Configurations {
   )
 
   private val staticConfiguration: Map[String, List[TestConfig]] = Map(
+    "refchecks" -> List(
+      TestConfig(
+        s"parallel",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs =
+          List("-Yrangepos", "-Yparallel-phases:refcheck", "-Yparallel-threads", "4", "-nowarn"),
+      )
+    ),
     "quick-dan" -> List(
       TestConfig("baseline",
                  BuildFromGit("cb5f0fc1ba5eb593c88de5b341d382aef6b61d72"),

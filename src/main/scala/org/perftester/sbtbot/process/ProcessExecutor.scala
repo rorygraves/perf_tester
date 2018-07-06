@@ -3,7 +3,7 @@ package org.perftester.sbtbot.process
 import java.io.PrintWriter
 
 import akka.actor.{Actor, ActorLogging, Cancellable, Props}
-import ProcessExecutor.{CheckStatus, Send}
+import ProcessExecutor.{CheckDeadlock, CheckStatus, Send}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -14,6 +14,7 @@ object ProcessExecutor {
   }
 
   case object CheckStatus
+  case object CheckDeadlock
 
   case class Send(s: String)
 
@@ -32,7 +33,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
   private var errReader: Option[InputStreamLineReader] = None
   private var inWriter: Option[PrintWriter]            = None
 
-  var timer: Option[Cancellable] = None
+  var timers: Seq[Cancellable] = Nil
 
   override def preStart(): Unit = {
     super.preStart()
@@ -43,11 +44,13 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
   var processTerminated = false
   var outTerminated     = false
   var errTerminated     = false
+  var seenLog           = false
 
   private def processIOStream(isr: Option[InputStreamLineReader], ioSource: IOSource): Unit = {
     isr.foreach { r =>
       r.read().foreach { line =>
         context.parent ! ProcessIO(ioSource, line)
+        seenLog = true
       }
     }
   }
@@ -56,6 +59,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     isr.foreach { r =>
       r.close().foreach { line =>
         context.parent ! ProcessIO(ioSource, line)
+        seenLog = true
       }
 
     }
@@ -83,9 +87,28 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     }
   }
 
+  def takeASnapshot(): Unit = {
+    val out = {
+      import sys.process._
+      "jps".!!
+    }
+    val pids =
+      out.lines.toList.map(_.split(" ")).filter(_.apply(1) == "sbt-launch.jar").map(_.apply(0))
+    pids.foreach { pid =>
+      println(s"#### Stacktrace of sbt project of pid $pid ####")
+      println {
+        import sys.process._
+        s"jstack $pid".!!
+      }
+    }
+  }
+
   override def receive: Receive = {
     case CheckStatus =>
       check()
+    case CheckDeadlock =>
+      try if (!seenLog) takeASnapshot()
+      finally seenLog = false
     case Send(text) =>
       inWriter.foreach { w =>
         w.println(text)
@@ -108,7 +131,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     process.foreach {
       _.destroyForcibly()
     }
-    timer.foreach(_.cancel())
+    timers.foreach(_.cancel())
   }
 
   def startProcess(): Unit = {
@@ -132,8 +155,9 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     inWriter = Some(new PrintWriter(process.getOutputStream))
     log.info("Process started successfully")
     import scala.concurrent.duration._
-    timer = Some(
-      context.system.scheduler
-        .schedule(250.millis, 200.millis, context.self, CheckStatus))
+    timers = Seq(
+      context.system.scheduler.schedule(250.millis, 200.millis, context.self, CheckStatus),
+      context.system.scheduler.schedule(250.millis, 5.minutes, context.self, CheckDeadlock)
+    )
   }
 }
