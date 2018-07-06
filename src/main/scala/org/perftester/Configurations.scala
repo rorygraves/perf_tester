@@ -115,13 +115,12 @@ object Configurations {
     )
   }
   private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
-    "miles-byname-implicits" -> (
-        (_: EnvironmentConfig) =>
-          List(
-            TestConfig("pre-pr", BuildFromGit("53f06bcc786caeeb360a5c60ca571b84f50ea2ab")),
-            TestConfig("pr", BuildFromGit("063a508cee9e50ac712f998182e7f806c30382d0")),
-            TestConfig("jason-feedback", BuildFromGit("563930783121cfce86f13e2dcb9d0f09927a03ab"))
-          )),
+    "miles-byname-implicits" -> ((_: EnvironmentConfig) =>
+      List(
+        TestConfig("pre-pr", BuildFromGit("53f06bcc786caeeb360a5c60ca571b84f50ea2ab")),
+        TestConfig("pr", BuildFromGit("063a508cee9e50ac712f998182e7f806c30382d0")),
+        TestConfig("jason-feedback", BuildFromGit("563930783121cfce86f13e2dcb9d0f09927a03ab"))
+      )),
     "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false),
     "quick-13-imports" -> series("scala/2.13.x",
                                  "origin/mike/2.13.x_implicit_import",

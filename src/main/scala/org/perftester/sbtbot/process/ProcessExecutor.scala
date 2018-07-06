@@ -87,13 +87,18 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     }
   }
 
+  private val sbtJVMNames = Set("sbt-launch.jar", "Boot")
+
   def takeASnapshot(): Unit = {
     val out = {
       import sys.process._
       "jps".!!
     }
     val pids =
-      out.lines.toList.map(_.split(" ")).filter(_.apply(1) == "sbt-launch.jar").map(_.apply(0))
+      out.lines.toList.map(_.split(" ")).filter(row => sbtJVMNames.contains(row(1))).map(_.apply(0))
+    if(pids.isEmpty){
+      println(s"### No sbt jvm running in:\n $out")
+    }
     pids.foreach { pid =>
       println(s"#### Stacktrace of sbt project of pid $pid ####")
       println {
