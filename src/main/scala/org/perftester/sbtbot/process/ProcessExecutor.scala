@@ -96,7 +96,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     }
     val pids =
       out.lines.toList.map(_.split(" ")).filter(row => sbtJVMNames.contains(row(1))).map(_.apply(0))
-    if(pids.isEmpty){
+    if (pids.isEmpty) {
       println(s"### No sbt jvm running in:\n $out")
     }
     pids.foreach { pid =>
