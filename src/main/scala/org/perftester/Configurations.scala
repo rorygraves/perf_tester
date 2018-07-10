@@ -178,6 +178,43 @@ object Configurations {
           List("-Yrangepos", "-Yparallel-phases:refcheck", "-Yparallel-threads", "4", "-nowarn"),
       )
     ),
+    "cleanRun" -> List(
+      TestConfig(
+        s"parallel",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs =
+          List("-Yrangepos", "-Yparallel-phases:alaaaa", "-Yparallel-threads", "4", "-nowarn"),
+      )
+    ),
+    "baseline" -> List(
+      TestConfig(
+        s"parallel",
+        BuildFromDir("/home/kromanowski/workspace/scalas/baseline"),
+        extraArgs = List("-Yrangepos", "-nowarn"),
+      )
+    ),
+    "baseline-cmp" -> List(
+      TestConfig(
+        s"baseline",
+        BuildFromDir("/home/kromanowski/workspace/scalas/baseline"),
+        extraArgs = List("-Yrangepos", "-nowarn"),
+      ),
+      TestConfig(
+        s"our",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs =
+          List("-Yrangepos", "-Yparallel-phases:alaaaa", "-Yparallel-threads", "4", "-nowarn"),
+      ),
+      TestConfig(
+        s"our-parallel",
+        BuildFromDir("/home/kromanowski/workspace/scalas/scalac_perf"),
+        extraArgs = List("-Yrangepos",
+                         "-Yparallel-phases:parser,refcheck",
+                         "-Yparallel-threads",
+                         "4",
+                         "-nowarn"),
+      )
+    ),
     "quick-dan" -> List(
       TestConfig("baseline",
                  BuildFromGit("cb5f0fc1ba5eb593c88de5b341d382aef6b61d72"),

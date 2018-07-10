@@ -162,7 +162,7 @@ class ProcessExecutor private (command: ProcessCommand) extends Actor with Actor
     import scala.concurrent.duration._
     timers = Seq(
       context.system.scheduler.schedule(250.millis, 200.millis, context.self, CheckStatus),
-      context.system.scheduler.schedule(250.millis, 5.minutes, context.self, CheckDeadlock)
+      context.system.scheduler.schedule(5.minutes, 5.minutes, context.self, CheckDeadlock)
     )
   }
 }

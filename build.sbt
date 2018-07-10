@@ -35,3 +35,5 @@ mainClass in assembly := Some("org.perftester.ProfileMain")
 // scalafmt configuration
 scalafmtOnCompile in ThisBuild := true     // all projects
 scalafmtTestOnCompile in ThisBuild := true // all projects
+
+TaskKey[Unit]("exitSBT") := ???
