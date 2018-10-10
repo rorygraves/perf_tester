@@ -1,0 +1,71 @@
+info, 1, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7852062735927,7852087173817,1,0,<init phase>,,0,106,pool-12-thread-2,24437890,0,23375107,20000000,6188776,167443392 
+GC,7853377855856,7853423855856,13388, 13433,PS Scavenge,end of minor GC,Allocation Failure,8
+GC,7854038317429,7854072317429,14056, 14089,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7852098324403,7854491367713,1,1,parser,,0,106,pool-12-thread-2,2393043310,0,2271219423,2260000000,578503984,291619456 
+main,7854491623744,7854973433588,1,2,namer,,0,106,pool-12-thread-2,481809844,0,459905695,450000000,16001776,311608680 
+info, 2, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7855830327421,7855844100201,2,0,<init phase>,,0,119,pool-14-thread-2,13772780,0,13589805,10000000,6098224,367422064 
+GC,7855944293475,7855979293475,15962, 15996,PS Scavenge,end of minor GC,Allocation Failure,8
+GC,7856507866838,7856548866838,16526, 16566,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7855847087564,7856975423347,2,1,parser,,0,119,pool-14-thread-2,1128335783,0,1045330218,1040000000,559000576,398977536 
+main,7856975582625,7857128773775,2,2,namer,,0,119,pool-14-thread-2,153191150,0,146839356,150000000,8600424,407515832 
+info, 3, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7857516349525,7857530328232,3,0,<init phase>,,0,132,pool-16-thread-1,13978707,0,13965178,10000000,6098248,460218712 
+GC,7857597345237,7857647345237,17615, 17664,PS Scavenge,end of minor GC,Allocation Failure,8
+GC,7858163538415,7858217538415,18181, 18234,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7857532211526,7858655597012,3,1,parser,,0,132,pool-16-thread-1,1123385486,0,1017757133,1020000000,557165656,386031240 
+main,7858656331515,7858773119396,3,2,namer,,0,132,pool-16-thread-1,116787881,0,116089447,110000000,8545216,397187648 
+info, 4, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7859112533281,7859130717245,4,0,<init phase>,,0,147,pool-18-thread-1,18183964,0,18196140,10000000,6098248,452011352 
+GC,7859428391166,7859468391166,19446, 19485,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7859132871856,7859999475839,4,1,parser,,0,147,pool-18-thread-1,866603983,0,824766175,820000000,555705768,578939296 
+main,7859999670841,7860098038143,4,2,namer,,0,147,pool-18-thread-1,98367302,0,96458006,100000000,8354664,585881760 
+info, 5, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7860640185509,7860651880081,5,0,<init phase>,,0,162,pool-20-thread-2,11694572,0,11697762,10000000,6098248,198795800 
+GC,7861361398381,7861389398381,21379, 21406,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7860653677531,7861407078347,5,1,parser,,0,162,pool-20-thread-2,753400816,0,725519636,720000000,555424928,211081736 
+main,7861407304042,7861479184392,5,2,namer,,0,162,pool-20-thread-2,71880350,0,71171888,70000000,8342968,219665032 
+info, 6, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7861958787029,7861973704186,6,0,<init phase>,,0,177,pool-22-thread-3,14917157,0,14917725,10000000,6090136,270887592 
+GC,7862614431233,7862632431233,22633, 22650,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7861975254050,7862716017781,6,1,parser,,0,177,pool-22-thread-3,740763731,0,722576469,720000000,556536344,257237624 
+main,7862716137024,7862791501795,6,2,namer,,0,177,pool-22-thread-3,75364771,0,74358394,80000000,8234200,264087472 
+info, 7, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7863113174410,7863128524119,7,0,<init phase>,,0,196,pool-24-thread-4,15349709,0,15353431,0,6090056,319022944 
+main,7863129955515,7863907427142,7,1,parser,,0,196,pool-24-thread-4,777471627,0,777010836,760000000,556375264,876125600 
+main,7863907602571,7863978571825,7,2,namer,,0,196,pool-24-thread-4,70969254,0,67483131,70000000,6228240,881750072 
+info, 8, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7864371744726,7864382919439,8,0,<init phase>,,0,208,pool-26-thread-2,11174713,0,11169016,0,6090704,196585416 
+main,7864384532992,7865042880063,8,1,parser,,0,208,pool-26-thread-2,658347071,0,657659825,660000000,556279640,753696168 
+main,7865043006568,7865092993871,8,2,namer,,0,208,pool-26-thread-2,49987303,0,47660662,40000000,6296384,760339312 
+info, 9, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7865582763250,7865594656741,9,0,<init phase>,,0,223,pool-28-thread-2,11893491,0,11892822,10000000,6090056,806313592 
+GC,7865665562797,7865680562797,25684, 25698,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7865595545446,7866264259728,9,1,parser,,0,223,pool-28-thread-2,668714282,0,654387936,650000000,556172104,680066136 
+main,7866264399331,7866329214641,9,2,namer,,0,223,pool-28-thread-2,64815310,0,63569758,60000000,8035504,687516792 
+info, 10, version, 2, output, /home/kromanowski/workspace/perf_tester/corpus/scala-library/target/scala-2.13.0-M3/classes
+header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize
+header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+main,7866750539306,7866762659014,10,0,<init phase>,,0,239,pool-30-thread-6,12119708,0,12118034,10000000,6090056,740896720 
+GC,7867091577012,7867100577012,27110, 27118,PS Scavenge,end of minor GC,Allocation Failure,8
+main,7866763496271,7867506285519,10,1,parser,,0,239,pool-30-thread-6,742789248,0,732772515,700000000,556133808,495160792 
+main,7867506447524,7867554272427,10,2,namer,,0,239,pool-30-thread-6,47824903,0,47287637,50000000,8024792,501646560 

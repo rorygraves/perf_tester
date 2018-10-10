@@ -1,0 +1,2 @@
+sbt "runMain org.perftester.ProfileMain -s ../scalas/scalac_perf -a corpus/compiler-bridge  -r reports -i 11 -p 2 --user krzysiek --config baseline-cmp" exitSBT > out.txt
+cat out.txt | grep "best 20\%$" -A 3
