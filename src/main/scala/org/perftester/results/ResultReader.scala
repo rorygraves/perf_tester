@@ -44,6 +44,6 @@ object ResultReader {
       .sortBy(r => (r.iterationId, r.phaseId))
     val allIterations = (1 to iterations).to[SortedSet]
     val allPhases     = rows.groupBy(_.phaseName).keySet
-    RunResult(testConfig, rows, allIterations, allPhases)
+    RunResult(testConfig, info, rows, allIterations, allPhases)
   }
 }

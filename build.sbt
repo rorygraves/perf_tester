@@ -2,7 +2,7 @@ name := "perf_tester"
 
 version := "0.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 resolvers += Resolver.bintrayRepo("dhpcs", "maven")
 
@@ -25,7 +25,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 libraryDependencies += "junit" % "junit" % "4.11" % "test"
 //scala compiler only for direct compilation
 //should be a seperate project - just needed for the launcher
-libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.6"
+libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.8"
 
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 addSbtPlugin("com.artima.supersafe" % "sbtplugin" % "1.1.3")

@@ -32,22 +32,23 @@ sealed trait PhaseRow extends DataRow {
   def allocatedBytes: Long
 
   def heapSize: Long
-//
-//  override def startMs = startNs / 1000000
-//
-//  override def endMs = endNs / 1000000
-//
-//  def runMs = runNs / 1000000
-//
-//  def idleMs = idleNs / 1000000
-//
-//  def cpuTimeMs = cpuTimeNs / 1000000
-//
-//  def userTimeMs = userTimeNs / 1000000
-//
-//  def allocatedMbs = allocatedBytes.toDouble / (1024 * 1024)
-//
-//  def heapSizeMb = heapSize.toDouble / (1024 * 1024)
+
+  //
+  //  override def startMs = startNs / 1000000
+  //
+  //  override def endMs = endNs / 1000000
+  //
+  //  def runMs = runNs / 1000000
+  //
+  //  def idleMs = idleNs / 1000000
+  //
+  //  def cpuTimeMs = cpuTimeNs / 1000000
+  //
+  //  def userTimeMs = userTimeNs / 1000000
+  //
+  //  def allocatedMbs = allocatedBytes.toDouble / (1024 * 1024)
+  //
+  //  def heapSizeMb = heapSize.toDouble / (1024 * 1024)
 
 }
 
@@ -63,12 +64,13 @@ sealed abstract class DataRowType[T <: DataRow](val typeStr: String) {
 
   def parse(values: List[String], version: Int): T
 }
+
 case class InfoRow(runId: Int, version: Int, target: String)
 
 object InfoRow {
   def parse(values: List[String]): InfoRow = {
     values.size match {
-      case 3 => InfoRow(values(1).toInt, 1, values(2))
+      case 3 => InfoRow(values(1).toInt, -1, values(2))
       case 6 if values(2) == "version" && values(4) == "output" =>
         InfoRow(values(1).toInt, values(3).toInt, values(5))
       case _ =>
@@ -118,6 +120,26 @@ case object MainDataRowType extends DataRowType[MainPhaseRow]("main") {
         values(14).toLong, // allocatedBytes
         values(15).toLong // heapSize
       )
+  //header	id	phaseId	phaseName	type	id	comment	wallClockTimeMs	idleTimeMs	cpuTimeMs	userTimeMs	allocatedMB	retainedHeapMB	gcTimeMs
+  def parseV1(values: List[String]): DataRow =
+    MainPhaseRow(
+      0, // startNs
+      (values(7).toDouble * 1000000).toLong, // endNs
+      values(1).toInt, //  runId
+      values(2).toInt, // phaseId
+      values(3), // phaseName
+      values(4), // purpose
+      0, //task-count
+      0, // threadId
+      "", // threadName
+      (values(7).toDouble * 1000000).toLong, // runNs
+      0, // idleNs
+      (values(9).toDouble * 1000000).toLong, // cpuTimeNs
+      (values(10).toDouble * 1000000).toLong, // userTimeNs
+      (values(11).toDouble * 1000000).toLong, // allocatedBytes
+      (values(12).toDouble * 1000000).toLong // heapSize
+    )
+
 }
 
 case object BackgroundDataRowType extends DataRowType[BackgroundPhaseRow]("background") {
@@ -164,7 +186,7 @@ case object BackgroundDataRowType extends DataRowType[BackgroundPhaseRow]("backg
 
 case object GCDataRowType extends DataRowType[GCDataRow]("GC") {
   override def parse(values: List[String], version: Int) =
-  //header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+    //header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
     GCDataRow(
       values(1).toLong, // startNs
       values(2).toLong, // endNs
@@ -174,6 +196,18 @@ case object GCDataRowType extends DataRowType[GCDataRow]("GC") {
       values(6), // action
       values(7), // cause
       values(8).toInt // threads
+    )
+  def parseV1(values: List[String]) =
+    //header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads
+    GCDataRow(
+      values(1).toLong, // startNs
+      values(2).toLong, // endNs
+      values(1).toLong, // startMs
+      values(2).toLong, // endMs
+      "", // name
+      "", // action
+      "", // cause
+      1 // threads
     )
 }
 
@@ -185,13 +219,13 @@ case class GCDataRow(startNs: Long,
                      action: String,
                      cause: String,
                      threads: Int)
-  extends DataRow {
+    extends DataRow {
   override def rowType = GCDataRowType
 }
 
 case object LockDataRowType extends DataRowType[LockDataRow]("lock") {
   override def parse(values: List[String], version: Int) =
-  //    out.println(s"header(lock),startNs,endNs,runId,phaseId,phaseName,lock-name,lockId,accessCount,contentedWrite,uncontendedWrites,contendedWriteNs")
+    //    out.println(s"header(lock),startNs,endNs,runId,phaseId,phaseName,lock-name,lockId,accessCount,contentedWrite,uncontendedWrites,contendedWriteNs")
     LockDataRow(
       values(1).toLong, // startNs
       values(2).toLong, // endNs
@@ -218,7 +252,7 @@ case class LockDataRow(startNs: Long,
                        contentedWriteCount: Long,
                        uncontentedWriteCount: Long,
                        contentedWriteNs: Long)
-  extends DataRow {
+    extends DataRow {
   override def rowType = GCDataRowType
 }
 
@@ -266,16 +300,33 @@ case class BackgroundPhaseRow(startNs: Long,
 
 object DataRow {
   def apply(values: List[String], version: Int): Option[DataRow] = {
-    values(0) match {
-      case "info" =>
-        None
-      case x if x.startsWith("header(") =>
-        None
-      case x if DataRowType.allTypes.contains(x) =>
-        Some(DataRowType.allTypes(x).parse(values, version))
-      case x =>
-        println(s"NO MATCH $x")
-        None
+    version match {
+      case -1 =>
+        values(0) match {
+          case "info" | "header" =>
+            None
+          case "GC" =>
+            Some(GCDataRowType.parseV1(values))
+          case "data" =>
+            if (values(4) == "single") Some(MainDataRowType.parseV1(values))
+            else None
+          case other =>
+            println(s"NO MATCH $other")
+            None
+        }
+
+      case 2 =>
+        values(0) match {
+          case "info" | "header" =>
+            None
+          case x =>
+            DataRowType.allTypes.get(x) match {
+              case Some(parser) => Some(parser.parse(values, version))
+              case None =>
+                println(s"NO MATCH $x")
+                None
+            }
+        }
     }
   }
 }

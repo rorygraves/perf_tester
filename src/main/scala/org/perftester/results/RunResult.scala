@@ -1,10 +1,12 @@
 package org.perftester.results
 
 import org.perftester.TestConfig
+import org.perftester.results.rows.InfoRow
 
 import scala.collection.SortedSet
 
 case class RunResult(testConfig: TestConfig,
+                     info: InfoRow,
                      rawData: Seq[PhaseResults],
                      iterations: SortedSet[Int],
                      phases: Set[String]) {

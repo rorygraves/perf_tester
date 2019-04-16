@@ -119,8 +119,8 @@ object Configurations {
     "quick-13-imports" -> series("scala/2.13.x",
                                  "origin/mike/2.13.x_implicit_import",
                                  useSbt = true),
-    "quick-devxx"    -> lastOnly("scala/2.12.x", "origin/mike/2.12.x_developer", useSbt = false),
-    "213x_postTyper" -> lastOnly("scala/2.13.x", "origin/mike/2.13.x_postTyper", useSbt = false),
+    "quick-devxx" -> lastOnly("scala/2.12.x", "origin/mike/2.12.x_developer", useSbt = false),
+    "213x_Namer"  -> series("scala/2.13.x", "origin/mike/2.13.x_names", useSbt = true),
     "212x_rangepos" -> series("scala/2.12.x",
                               "origin/mike/2.12.x_rangepos",
                               useSbt = false,
@@ -235,6 +235,9 @@ object Configurations {
       TestConfig("01_bench", BuildFromDir("S:/scala/quick", false)),
       TestConfig("02_bench", BuildFromDir("S:/scala/quick", false)),
       TestConfig("03_bench", BuildFromDir("S:/scala/quick", false))
+    ),
+    "parallel" -> List(
+      TestConfig("x", BuildFromDir("S:/scala/2.13/parallel", false))
     ),
     "mike-Nil" -> List(
       TestConfig("before-pr", BuildFromGit("d1b745c2e97cc89e5d26b8f5a5696a2611c01af7")),
