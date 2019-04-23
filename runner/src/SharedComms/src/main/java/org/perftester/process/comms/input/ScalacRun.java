@@ -7,4 +7,9 @@ public class ScalacRun extends InputCommand {
         super(InputType.ScalacRun);
         this.id = id;
     }
+    @Override
+    public String toString() {
+        return "Command - ScalacRun[" + id  + "]";
+    }
+
 }

@@ -33,8 +33,7 @@ class Parent(config: ProcessConfiguration) {
   }
 
   val fullClassPath =
-    (getClass.getProtectionDomain.getCodeSource.getLocation.getFile.toString :: config.classPath)
-      .mkString("", File.pathSeparator, "")
+    config.classPath.mkString("", File.pathSeparator, "")
 
   builder.inheritIO()
   val allParams = List("java", "-classpath", fullClassPath) ++ config.params ++ List(
@@ -88,7 +87,7 @@ class Parent(config: ProcessConfiguration) {
   def exec(cmd: InputCommand, duration: Duration) = synchronized {
     response = Promise[Complete]
     cmd.writeTo(oos)
-    println(s"running $cmd")
+    println(s"sending $cmd")
     Await.result(response.future, duration) match {
       case cmp: Complete if cmp.input == cmd =>
         if (cmp.failed) {

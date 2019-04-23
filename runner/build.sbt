@@ -12,11 +12,9 @@ resolvers += Resolver.bintrayRepo("dhpcs", "maven")
 resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"
 addSbtPlugin("com.artima.supersafe" % "sbtplugin" % "1.1.3")
 
-mainClass in assembly := Some("org.perftester.ProfileMain")
-
-// scalafmt configuration
-scalafmtOnCompile in ThisBuild := true     // all projects
-scalafmtTestOnCompile in ThisBuild := true // all projects
+//// scalafmt configuration
+//scalafmtOnCompile in ThisBuild := true     // all projects
+//scalafmtTestOnCompile in ThisBuild := true // all projects
 
 lazy val ChildMain = (project in file("src/ChildMain"))
   .settings(
@@ -48,6 +46,7 @@ lazy val PerfTester = (project in file("src/PerfTester"))
     libraryDependencies += "org.scalactic"      %% "scalactic"       % "3.0.4",
     libraryDependencies += "org.scalatest"      %% "scalatest"       % "3.0.4" % "test",
     libraryDependencies += "junit"              % "junit"            % "4.11" % "test",
-    crossScalaVersions := List(scala212)
+    crossScalaVersions := List(scala212), 
+    mainClass := Some("org.perftester.ProfileMain")
   )
-  .dependsOn(SharedComms)
+  .dependsOn(SharedComms, ChildMain)

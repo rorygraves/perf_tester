@@ -7,4 +7,10 @@ public class ScalacRetire extends InputCommand {
         super(InputType.ScalacRetire);
         this.id = id;
     }
+
+    @Override
+    public String toString() {
+        return "Command - ScalacRetire[" + id  + "]";
+    }
+
 }

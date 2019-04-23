@@ -9,4 +9,9 @@ public class Run extends InputCommand {
         this.className = className;
         this.args = args;
     }
+
+    @Override
+    public String toString() {
+        return "Command - Run";
+    }
 }

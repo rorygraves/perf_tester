@@ -7,7 +7,7 @@ import java.nio.file.Paths
 
 import javax.net.SocketFactory
 import org.perftester.process.comms.input._
-import org.perftester.process.comms.output.Complete
+import org.perftester.process.comms.output.{Complete, ConsoleOutput}
 
 import scala.collection.mutable
 import scala.hacks.NioFile
@@ -16,7 +16,7 @@ import scala.tools.nsc.reporters.NoReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 
-class ChildMainConfig(host: String = "localhost", port: Int)
+class ChildMainConfig(val host: String = "localhost", val port: Int)
 
 class ChildMain(val config:ChildMainConfig ) extends Runnable {
 
@@ -45,7 +45,9 @@ class ChildMain(val config:ChildMainConfig ) extends Runnable {
     try {
       var done = false
       while (!done) {
+        println("reading a command")
         val cmd   = read()
+        println(s"cmd $cmd")
         val start = System.nanoTime()
         val res = Try {
           cmd match {
@@ -145,18 +147,18 @@ result.writeTo(oos)
 class DontExit extends AssertionError
 
 
-//class ConsoleStream(err: Boolean, original: PrintStream, stream: ObjectOutputStream)
-//    extends OutputStream {
-//
-//  val copy = true
-//
-//  override def write(b: Int): Unit = {
-//    new Console(err, new Array[Byte](b.toInt)).writeTo(stream)
-//    if (copy) original.write(b)
-//  }
-//
-//  override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-//    new Console(err, util.Arrays.copyOfRange(b, off, off + len)).writeTo(stream)
-//    if (copy) original.write(b, off, len)
-//  }
-//}
+class ConsoleStream(err: Boolean, original: PrintStream, stream: ObjectOutputStream)
+    extends OutputStream {
+
+  val copy = true
+
+  override def write(b: Int): Unit = {
+    new ConsoleOutput(err, new Array[Byte](b.toInt)).writeTo(stream)
+    if (copy) original.write(b)
+  }
+
+  override def write(b: Array[Byte], off: Int, len: Int): Unit = {
+    new ConsoleOutput(err, java.util.Arrays.copyOfRange(b, off, off + len)).writeTo(stream)
+    if (copy) original.write(b, off, len)
+  }
+}
