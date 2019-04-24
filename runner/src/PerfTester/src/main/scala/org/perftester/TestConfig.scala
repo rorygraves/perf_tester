@@ -25,4 +25,5 @@ case class TestConfig(id: String,
                       buildDefn: BuildType,
                       extraArgs: List[String] = Nil,
                       extraJVMArgs: List[String] = Nil,
+                      useScala2_13: Boolean = false,
                       useSbt: Boolean = true)

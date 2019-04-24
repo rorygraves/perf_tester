@@ -4,6 +4,7 @@ import java.io.{File, ObjectInputStream, ObjectOutputStream}
 import java.net.{ServerSocket, SocketException}
 import java.util.concurrent.atomic.AtomicBoolean
 
+import org.perftester.process.child.Bootstrap
 import org.perftester.process.comms.input._
 import org.perftester.process.comms.output._
 
@@ -37,14 +38,14 @@ class Parent(config: ProcessConfiguration) {
 
   builder.inheritIO()
   val allParams = List("java", "-classpath", fullClassPath) ++ config.params ++ List(
-    "org.perftester.process.child.Bootstrap",
+    classOf[Bootstrap].getName,
     port.toString)
 
   println(allParams.mkString(" "))
   builder.command(allParams: _*)
 
   private val process = builder.start()
-  server.setSoTimeout(100000) //10 seconds
+  server.setSoTimeout(10000) //10 seconds
   private val socket = server.accept()
   server.close()
   private val out = socket.getOutputStream

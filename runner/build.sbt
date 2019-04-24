@@ -18,8 +18,18 @@ addSbtPlugin("com.artima.supersafe" % "sbtplugin" % "1.1.3")
 
 lazy val ChildMain = (project in file("src/ChildMain"))
   .settings(
-    crossScalaVersions := supportedScalaVersions,
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.8"
+    crossScalaVersions := List(scala212),
+    scalaVersion := scala212,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212
+  )
+  .dependsOn(SharedComms)
+lazy val ChildMain213 = (project in file("src/ChildMain213"))
+  .settings(
+//    scalaSource := baseDirectory.value / ".." / "ChildMain" / "src" / "main" / "scala",
+//    javaSource := baseDirectory.value / ".." / "ChildMain" / "src" / "main" / "scala",
+    crossScalaVersions := List(scala213),
+    scalaVersion := scala213,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scala213
   )
   .dependsOn(SharedComms)
 
@@ -46,7 +56,7 @@ lazy val PerfTester = (project in file("src/PerfTester"))
     libraryDependencies += "org.scalactic"      %% "scalactic"       % "3.0.4",
     libraryDependencies += "org.scalatest"      %% "scalatest"       % "3.0.4" % "test",
     libraryDependencies += "junit"              % "junit"            % "4.11" % "test",
-    crossScalaVersions := List(scala212), 
+    crossScalaVersions := List(scala212),
     mainClass := Some("org.perftester.ProfileMain")
   )
   .dependsOn(SharedComms, ChildMain)

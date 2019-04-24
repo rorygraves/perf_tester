@@ -42,23 +42,28 @@ object Compiler extends App {
 //    "S:\\scala\\perf\\tester-base\\perf_tester\\runner\\src\\SharedComms\\target\\classes",
 //    "C:\\Users\\User\\.ivy2\\cache\\org.scala-lang.modules\\scala-xml_2.12\\bundles\\scala-xml_2.12-1.0.6.jar",
 
-//    "C:\\Users\\User\\.ivy2\\cache\\org.scala-lang\\scala-reflect\\jars\\scala-reflect-2.12.8.jar",
-//    "C:\\Users\\User\\.ivy2\\cache\\org.scala-lang\\scala-library\\jars\\scala-library-2.12.8.jar",
-//    "C:\\Users\\User\\.ivy2\\cache\\org.scala-lang\\scala-compiler\\jars\\scala-compiler-2.12.8.jar",
+    s"$ivy\\org.scala-lang\\scala-reflect\\jars\\scala-reflect-2.12.8.jar",
+    s"$ivy\\org.scala-lang\\scala-library\\jars\\scala-library-2.12.8.jar",
+    s"$ivy\\org.scala-lang\\scala-compiler\\jars\\scala-compiler-2.12.8.jar",
+//
+//    s"$ivy\\org.scala-lang\\scala-reflect\\jars\\scala-reflect-2.13.0-RC1.jar",
+//    s"$ivy\\org.scala-lang\\scala-library\\jars\\scala-library-2.13.0-RC1.jar",
+//    s"$ivy\\org.scala-lang\\scala-compiler\\jars\\scala-compiler-2.13.0-RC1.jar",
 
-//    "C:\\Program Files\\JetBrains\\IntelliJ IDEA Community Edition 2018.3.1\\lib\\idea_rt.jar",
+    //    "C:\\Program Files\\JetBrains\\IntelliJ IDEA Community Edition 2018.3.1\\lib\\idea_rt.jar",
 
 //    s"${lib}jline.jar",
 //    s"${lib}scala-compiler-doc.jar",
-    s"${lib}scala-compiler.jar",
-    s"${lib}scala-library.jar",
-    s"${lib}scala-reflect.jar",
+//    s"${lib}scala-compiler.jar",
+//    s"${lib}scala-library.jar",
+//    s"${lib}scala-reflect.jar",
 //    s"${lib}scala-repl-jline-embedded.jar",
 //    s"${lib}scala-repl-jline.jar",
 //    s"${lib}scala-swing_2.12-2.0.0.jar",
 //    s"${lib}scala-xml_2.12-1.0.6.jar",
 //    s"${lib}scalap.jar",
     s"${Paths.get("src", "ChildMain", "target", "scala-2.12", "classes").toAbsolutePath.toRealPath().toString}",
+//    s"${Paths.get("src", "ChildMain213", "target", "scala-2.13.0-RC1", "classes").toAbsolutePath.toRealPath().toString}",
     s"${Paths.get("src", "SharedComms", "target", "classes").toAbsolutePath.toRealPath().toString}"
   )
   classPath foreach println

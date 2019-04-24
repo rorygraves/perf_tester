@@ -38,8 +38,8 @@ object ProfileMain {
     //for some reason the jgit command doesnt work
     //so use the shell
     log.info(s"Running: git fetch    (in ${envConfig.checkoutDir})")
-//    Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch", "--all")(
-//      envConfig.checkoutDir)
+    Command(Vector.empty, sys.env, Shellout.executeStream)("git", "fetch", "--all")(
+      envConfig.checkoutDir)
 
     //jgit API that doesnt work please fix
     //    val git = GitUtils(envConfig.checkoutDir)
@@ -100,12 +100,12 @@ object ProfileMain {
       repeat: Int
   ): RunPlan = {
     val (sourceDir: Path, reuseScalac: Boolean, scalacPackDir: Path) = testConfig match {
-      case TestConfig(_, gitBuild @ BuildFromGit(baseSha, cherryPicks, customDir), _, _, _) =>
+      case TestConfig(_, gitBuild @ BuildFromGit(baseSha, cherryPicks, customDir), _, _, _, _) =>
         val targetDir = customDir.getOrElse(envConfig.checkoutDir)
         val packDir   = envConfig.scalacBuildCache / gitBuild.fullShaName
         val reused    = Files.exists(packDir / flag toNIO)
         (targetDir, reused, packDir)
-      case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _, _) =>
+      case TestConfig(_, bfd @ BuildFromDir(_, _, rebuild), _, _, _, _) =>
         val sourceDir   = bfd.path
         val targetBuild = buildDir(sourceDir)
         val reuse = {
@@ -282,19 +282,27 @@ object ProfileMain {
                            sbtCommands,
                            runPlan.envConfig.runWithDebug)
     } else {
-      val mkPackLibPath = (mkPackPath / "lib").toString()
       val classPath = List(
-        "jline.jar",
-        "scala-compiler-doc.jar",
+//        "jline.jar",
+//        "scala-compiler-doc.jar",
         "scala-compiler.jar",
         "scala-library.jar",
         "scala-reflect.jar",
-        "scala-repl-jline-embedded.jar",
-        "scala-repl-jline.jar",
-        "scala-swing_2.12-2.0.0.jar",
-        "scala-xml_2.12-1.0.6.jar",
-        "scalap.jar"
+//        "scala-repl-jline-embedded.jar",
+//        "scala-repl-jline.jar",
+//        "scala-swing_2.12-2.0.0.jar",
+//        "scala-xml_2.12-1.0.6.jar",
+//        "scalap.jar",
       ).map(mkPackPath + File.separator + "lib" + File.separator + _)
+      
+      val bootstrap: List[String] = ((if (runPlan.testConfig.useScala2_13)
+        s"${Paths.get("src", "ChildMain213", "target", "scala-2.13.0-RC1", "classes").toAbsolutePath.toRealPath().toString}"
+      else
+        s"${Paths.get("src", "ChildMain", "target", "scala-2.12", "classes").toAbsolutePath.toRealPath().toString}")
+      :: 
+        List(s"${Paths.get("src", "SharedComms", "target", "classes").toAbsolutePath.toRealPath().toString}")
+
+      )
 
       //      s"${lib}jline.jar;${lib}scala-compiler-doc.jar;${lib}scala-compiler.jar;${lib}scala-library.jar;${lib}scala-reflect.jar;${lib}scala-repl-jline-embedded.jar;${lib}scala-repl-jline.jar;${lib}scala-swing_2.12-2.0.0.jar;${lib}scala-xml_2.12-1.0.6.jar;${lib}scalap.jar"
       val params = List(
@@ -325,7 +333,7 @@ object ProfileMain {
         ) ++ profileParams ++ runPlan.testConfig.extraArgs
 
       val id         = "x"
-      val parent     = new Parent(ProcessConfiguration(new File("."), None, classPath, params))
+      val parent     = new Parent(ProcessConfiguration(new File("."), None, classPath ::: bootstrap, params))
       val outputPath = "z:\\output\\"
       val outputDir  = Path(outputPath)
       Files.createDirectories(outputDir.toNIO)

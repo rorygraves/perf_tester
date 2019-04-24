@@ -34,6 +34,7 @@ object Configurations {
                    extraArgs: List[String] = Nil,
                    extraJVMArgs: List[String] = Nil,
                    useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val use213   = is213(baseBranch)
     val steps    = eachStep(baseBranch, testBranch, config)
     val baseline = steps.head._2
     steps.map {
@@ -42,14 +43,18 @@ object Configurations {
                    BuildFromGit(baseSha = baseline.sha),
                    extraJVMArgs = extraArgs,
                    extraArgs = extraArgs,
-                   useSbt = useSbt)
+                   useSbt = useSbt,
+                   useScala2_13 = use213)
       case (name, rev) if (rev == baseline) =>
         val cherryPicks = List(rev.sha)
-        TestConfig(s"${name}.baseline+${rev.sha}",
-                   BuildFromGit(baseSha = baseline.sha, cherryPicks = cherryPicks),
-                   extraJVMArgs = extraArgs,
-                   extraArgs = extraArgs,
-                   useSbt = useSbt)
+        TestConfig(
+          s"${name}.baseline+${rev.sha}",
+          BuildFromGit(baseSha = baseline.sha, cherryPicks = cherryPicks),
+          extraJVMArgs = extraArgs,
+          extraArgs = extraArgs,
+          useSbt = useSbt,
+          useScala2_13 = use213
+        )
     }
   }
 
@@ -58,6 +63,7 @@ object Configurations {
              extraArgs: List[String] = Nil,
              extraJVMArgs: List[String] = Nil,
              useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val use213   = is213(baseBranch)
     val steps    = eachStep(baseBranch, testBranch, config)
     val baseline = steps.head._2
     steps.map {
@@ -66,13 +72,15 @@ object Configurations {
                    BuildFromGit(baseSha = baseline.sha),
                    extraJVMArgs = extraJVMArgs,
                    extraArgs = extraArgs,
-                   useSbt = useSbt)
+                   useSbt = useSbt,
+                   useScala2_13 = use213)
       case (name, rev) =>
         TestConfig(s"${name}=${rev.sha}",
                    BuildFromGit(baseSha = rev.sha),
                    extraJVMArgs = extraJVMArgs,
                    extraArgs = extraArgs,
-                   useSbt = useSbt)
+                   useSbt = useSbt,
+                   useScala2_13 = use213)
     }
   }
   def lastOnly(baseBranch: String,
@@ -80,6 +88,7 @@ object Configurations {
                extraArgs: List[String] = Nil,
                extraJVMArgs: List[String] = Nil,
                useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val use213                      = is213(baseBranch)
     val steps                       = eachStep(baseBranch, testBranch, config)
     val (baselineName, baselineRev) = steps.head
     val (_, lastRev)                = steps.last
@@ -89,12 +98,14 @@ object Configurations {
                  BuildFromGit(baseSha = baselineRev.sha),
                  extraJVMArgs = extraJVMArgs,
                  extraArgs = extraArgs,
-                 useSbt = useSbt),
+                 useSbt = useSbt,
+                 useScala2_13 = use213),
       TestConfig(lastName,
                  BuildFromGit(baseSha = lastRev.sha),
                  extraJVMArgs = extraJVMArgs,
                  extraArgs = extraArgs,
-                 useSbt = useSbt)
+                 useSbt = useSbt,
+                 useScala2_13 = use213)
     )
   }
   def branchLatest(baseBranch: String,
@@ -102,6 +113,7 @@ object Configurations {
                    extraArgs: List[String] = Nil,
                    extraJVMArgs: List[String] = Nil,
                    useSbt: Boolean = true)(config: EnvironmentConfig): List[TestConfig] = {
+    val use213                      = is213(baseBranch)
     val steps                       = eachStep(baseBranch, testBranch, config)
     val (baselineName, baselineRev) = steps.head
     val (_, lastRev)                = steps.last
@@ -111,17 +123,27 @@ object Configurations {
                  BuildFromGit(baseSha = lastRev.sha),
                  extraJVMArgs = extraJVMArgs,
                  extraArgs = extraArgs,
-                 useSbt = useSbt)
+                 useSbt = useSbt,
+                 useScala2_13 = use213)
     )
   }
-  private val dynmanicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
+  def is213(branchName: String): Boolean = {
+    if (branchName contains "2.12.x") false
+    else if (branchName contains "2.13.x") true
+    else throw new IllegalArgumentException(s"cant determine version from $branchName")
+
+  }
+  private val dynamicConfiguration: Map[String, (EnvironmentConfig) => List[TestConfig]] = Map(
 //    "quick-dan4" -> series("scala/2.12.x", "dan/2.12.x_flag", useSbt = false),
     "quick-13-imports" -> series("scala/2.13.x",
                                  "origin/mike/2.13.x_implicit_import",
                                  useSbt = true),
     "quick-devxx" -> lastOnly("scala/2.12.x", "origin/mike/2.12.x_developer", useSbt = false),
     "213x_Namer"  -> series("scala/2.13.x", "origin/mike/2.13.x_names", useSbt = true),
-    "213x_NamerP"  -> series("scala/2.13.x", "origin/mike/2.13.x_names", useSbt = false, extraArgs = List("-Yprofile-run-gc", "all")),
+    "213x_NamerP" -> series("scala/2.13.x",
+                            "origin/mike/2.13.x_names",
+                            useSbt = false,
+                            extraArgs = List("-Yprofile-run-gc", "all")),
     "212x_rangepos" -> series("scala/2.12.x",
                               "origin/mike/2.12.x_rangepos",
                               useSbt = false,
@@ -258,9 +280,9 @@ object Configurations {
   val configurations: Map[String, (EnvironmentConfig) => List[TestConfig]] = {
     val dynamicFromStatic = (staticConfiguration map {
       case (name, config) =>
-        assert(!dynmanicConfiguration.contains(name), s"both configurations contain $name")
+        assert(!dynamicConfiguration.contains(name), s"both configurations contain $name")
         name -> ((_: EnvironmentConfig) => config)
     })
-    dynmanicConfiguration ++ dynamicFromStatic
+    dynamicConfiguration ++ dynamicFromStatic
   }
 }
